@@ -3,35 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#102131">
-  <meta name="description" content="ShundaZhang 的安全学习地图：RISC-V 与 CoVE/TEE、量子计算与抗量子密码、格密码、CPU 侧信道与瞬态执行。">
-  <title>安全学习地图 · ShundaZhang</title>
+  <meta name="theme-color" content="#162535">
+  <meta name="description" content="ShundaZhang 的个人主页：系统与硬件安全、可信执行、密码学和攻防实践。">
+  <title>ShundaZhang · 个人主页</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <a class="skip-link" href="#topics">跳到四个专题</a>
+  <a class="skip-link" href="#main">跳至正文</a>
   <header class="site-header">
-    <div class="shell header-inner">
-      <a class="wordmark" href="/" aria-label="ShundaZhang 安全学习地图首页"><span class="wordmark-icon" aria-hidden="true">S<span>·</span>Z</span><span>SHUNDAZHANG<br><small>SECURITY LEARNING ATLAS</small></span></a>
-      <nav aria-label="页面导航"><a href="#topics">四个专题</a><a href="#connections">学习脉络</a><a href="https://github.com/ShundaZhang" target="_blank" rel="noopener noreferrer">GitHub ↗</a></nav>
+    <div class="wrap header-inner">
+      <a class="brand" href="/" aria-label="ShundaZhang 个人主页">ShundaZhang<span class="brand-dot">.</span></a>
+      <nav aria-label="主导航">
+        <a href="#about">关于</a>
+        <a href="#published">已发布</a>
+        <a href="#upcoming">计划中</a>
+        <a href="https://github.com/ShundaZhang" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
     </div>
   </header>
-  <main>
-    <section class="hero"><div class="shell hero-grid">
-      <div class="hero-copy"><span class="eyebrow"><span class="status-dot"></span> OPEN LEARNING / SECURITY ENGINEERING</span><h1>把复杂安全主题，<br><em>整理成可以走的路。</em></h1><p>四个平级的中文学习网站，从体系结构、量子威胁和数学基础，一路走到可信执行、密码实现与真实侧信道攻击。按你的背景选择入口，再沿着相邻主题继续深入。</p><div class="hero-actions"><a class="button primary" href="#topics">浏览四个专题 <span>↘</span></a><a class="button secondary" href="#connections">查看学习脉络 <span>↗</span></a></div><div class="hero-meta"><span><strong>04</strong> 独立专题</span><span><strong>01</strong> 统一入口</span><span><strong>∞</strong> 持续更新</span></div></div>
-      <div class="atlas-art" role="img" aria-label="四个平级主题：RISC-V、量子与 PQC、格密码、CPU 侧信道组成一张学习地图"><div class="art-head"><span>ATLAS / 001</span><span>FOUR EQUAL PATHS</span></div><div class="art-axis art-axis-x"></div><div class="art-axis art-axis-y"></div><div class="art-center">SECURITY<br><b>ATLAS</b></div><div class="orbit orbit-a"><b>01</b><span>RISC-V<br>CoVE / TEE</span></div><div class="orbit orbit-b"><b>02</b><span>QUANTUM<br>&amp; PQC</span></div><div class="orbit orbit-c"><b>03</b><span>LATTICE<br>CRYPTO</span></div><div class="orbit orbit-d"><b>04</b><span>CPU SIDE<br>CHANNELS</span></div><div class="art-foot">FOUR SITES · ONE STARTING POINT</div></div>
-    </div></section>
-    <section class="topics" id="topics"><div class="shell"><div class="section-heading"><div><span class="eyebrow dark-eyebrow">01 / TOPIC INDEX</span><h2>四个专题，<br>同一级入口。</h2></div><p>每个站点都位于这个域名下的独立一级目录，拥有自己的学习路径、导读和原始资料入口。</p></div>
-      <div class="topic-grid">
-        <article class="topic-card riscv"><div class="topic-top"><span class="topic-index">01 / ARCHITECTURE</span><span class="topic-icon" aria-hidden="true">R</span></div><h3>RISC-V 安全</h3><p>从 ISA、特权级、页表与启动链出发，理解系统安全边界，最后进入 CoVE / TEE。</p><div class="chips"><span>ISA</span><span>Privilege</span><span>CoVE / TEE</span></div><a class="topic-link" href="/riscv-security-atlas/">进入 RISC-V 安全地图 <span aria-hidden="true">↗</span></a></article>
-        <article class="topic-card quantum"><div class="topic-top"><span class="topic-index">02 / QUANTUM TRANSITION</span><span class="topic-icon" aria-hidden="true">Q</span></div><h3>量子计算与 PQC</h3><p>建立量子计算直觉，理解密码威胁、抗量子算法族和现实系统的迁移问题。</p><div class="chips"><span>Quantum</span><span>PQC</span><span>Migration</span></div><a class="topic-link" href="/quantum-pqc-atlas/">进入量子与 PQC 地图 <span aria-hidden="true">↗</span></a></article>
-        <article class="topic-card lattice"><div class="topic-top"><span class="topic-index">03 / CRYPTOGRAPHY</span><span class="topic-icon" aria-hidden="true">Λ</span></div><h3>格密码</h3><p>从格与带噪声方程，走到 LWE、ML-KEM / ML-DSA、代码实验与实现安全。</p><div class="chips"><span>LWE</span><span>ML-KEM</span><span>ML-DSA</span></div><a class="topic-link" href="/lattice-crypto-atlas/">进入格密码地图 <span aria-hidden="true">↗</span></a></article>
-        <article class="topic-card sidechannel"><div class="topic-top"><span class="topic-index">04 / MICROARCHITECTURE</span><span class="topic-icon" aria-hidden="true">μ</span></div><h3>CPU 侧信道</h3><p>区分泄漏通道与瞬态执行，读懂 Spectre / Meltdown 等真实漏洞、研究 PoC 和分层防御。</p><div class="chips"><span>Cache</span><span>Spectre</span><span>PoC</span></div><a class="topic-link" href="/side-channel-atlas/">进入 CPU 侧信道地图 <span aria-hidden="true">↗</span></a></article>
+  <main id="main">
+    <section class="intro" id="about">
+      <div class="wrap intro-inner">
+        <span class="eyebrow">PERSONAL WEBSITE</span>
+        <h1>你好，我是 <span>ShundaZhang</span>。</h1>
+        <p>我关注系统与硬件安全、可信执行、密码学和攻防实践。这里整理我正在研究的主题、做过的项目，以及之后会补充的个人经历。</p>
+        <a class="github-link" href="https://github.com/ShundaZhang" target="_blank" rel="noopener noreferrer">在 GitHub 上找到我 <span aria-hidden="true">↗</span></a>
       </div>
-    </div></section>
-    <section class="connections" id="connections"><div class="shell"><div class="section-heading inverse"><div><span class="eyebrow">02 / HOW THE TOPICS CONNECT</span><h2>专题平级，<br>知识彼此相连。</h2></div><p>不用按固定顺序通关。下面三个连接点能帮助你根据工作方向切换主题。</p></div><div class="connection-grid"><article><span>01 → 04</span><h3>CPU 安全与 TEE</h3><p>从 RISC-V / CoVE 的隔离承诺，追问预测器、缓存与共享微架构状态是否进入威胁模型。</p></article><article><span>02 → 03</span><h3>PQC 与格密码</h3><p>先在量子 / PQC 站看迁移动机，再到格密码站研究 LWE、标准算法和实现细节。</p></article><article><span>03 → 04</span><h3>算法与实现泄漏</h3><p>标准算法并不自动保证常数时间；用侧信道站的方法检查计时、访存与平台边界。</p></article></div></div></section>
+    </section>
+
+    <section class="directory" id="published" aria-labelledby="published-title">
+      <div class="wrap">
+        <div class="section-head"><div><span class="eyebrow">SELECTED WORK</span><h2 id="published-title">已发布</h2></div><p>目前公开的专题与项目。</p></div>
+        <div class="entry-grid">
+          <a class="entry published" href="/riscv-security-atlas/"><span class="entry-number">01</span><div><h3>RISC-V 安全</h3><p>架构、系统安全与 CoVE / TEE</p></div><span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="entry published" href="/quantum-pqc-atlas/"><span class="entry-number">02</span><div><h3>量子计算与抗量子密码</h3><p>量子基础、PQC 算法与迁移</p></div><span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="entry published" href="/lattice-crypto-atlas/"><span class="entry-number">03</span><div><h3>格密码</h3><p>格、LWE 与标准算法实现</p></div><span class="arrow" aria-hidden="true">↗</span></a>
+          <a class="entry published" href="/side-channel-atlas/"><span class="entry-number">04</span><div><h3>CPU 侧信道</h3><p>瞬态执行、真实漏洞与研究 PoC</p></div><span class="arrow" aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="directory upcoming" id="upcoming" aria-labelledby="upcoming-title">
+      <div class="wrap">
+        <div class="section-head"><div><span class="eyebrow">COMING LATER</span><h2 id="upcoming-title">计划中</h2></div><p>这些位置已留好，内容会逐步加入。</p></div>
+        <div class="entry-grid">
+          <article class="entry pending" data-slug="tee-tdx-sgx"><span class="entry-number">05</span><div><h3>TEE / TDX / SGX</h3><p>可信执行专题</p></div><span class="pending-label">待补充</span></article>
+          <article class="entry pending" data-slug="cryptography-basics"><span class="entry-number">06</span><div><h3>密码学基础</h3><p>概念、原语与协议</p></div><span class="pending-label">待补充</span></article>
+          <article class="entry pending" data-slug="ctf-results"><span class="entry-number">07</span><div><h3>CTF 成绩</h3><p>竞赛记录与实践</p></div><span class="pending-label">待补充</span></article>
+          <article class="entry pending" data-slug="resume"><span class="entry-number">08</span><div><h3>个人简历</h3><p>经历与项目</p></div><span class="pending-label">待补充</span></article>
+        </div>
+      </div>
+    </section>
   </main>
-  <footer class="site-footer"><div class="shell footer-inner"><div><strong>SHUNDAZHANG / SECURITY LEARNING ATLAS</strong><p>独立专题保留各自源码、学习路径和参考资料。本站为统一导航入口。</p></div><div><a href="https://github.com/ShundaZhang" target="_blank" rel="noopener noreferrer">GitHub 主页 ↗</a><p>更新于 2026-09-25</p></div></div></footer>
+  <footer class="site-footer"><div class="wrap footer-inner"><span>© 2026 ShundaZhang</span><a href="https://github.com/ShundaZhang" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div></footer>
 </body>
 </html>
