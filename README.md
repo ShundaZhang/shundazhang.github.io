@@ -4,22 +4,33 @@ Live: https://shundazhang.github.io/
 
 A bilingual personal introduction and project directory. English is the default; EN / 中文 selection is shared with the topic sites.
 
-Published entries:
+The homepage groups independent entries into four categories:
+
+### About me
+
+- [My CTF](https://shundazhang.github.io/ctf/)
+- [Résumé](https://shundazhang.github.io/resume/)
+
+### Cryptography
+
+- [Cryptography Foundations](https://shundazhang.github.io/cryptography-basics/)
+- [GM / SM Cryptography Atlas](https://shundazhang.github.io/gm-sm-atlas/)
+- [Lattice Cryptography Atlas](https://shundazhang.github.io/lattice-crypto-atlas/)
+- [Quantum & PQC Atlas](https://shundazhang.github.io/quantum-pqc-atlas/)
+
+### Security
 
 - [RISC-V Security Atlas](https://shundazhang.github.io/riscv-security-atlas/)
-- [Quantum & PQC Atlas](https://shundazhang.github.io/quantum-pqc-atlas/)
-- [Lattice Cryptography Atlas](https://shundazhang.github.io/lattice-crypto-atlas/)
-- [CPU Side-Channel Atlas](https://shundazhang.github.io/side-channel-atlas/)
-- [My CTF](https://shundazhang.github.io/ctf/)
 - [TEE / TDX / SGX Atlas](https://shundazhang.github.io/tee-tdx-sgx/)
 - [Trusted Boot & Attestation Atlas](https://shundazhang.github.io/trusted-boot-attestation-atlas/)
-- [Cryptography Foundations](https://shundazhang.github.io/cryptography-basics/)
-- [Résumé](https://shundazhang.github.io/resume/)
+- [CPU Side-Channel Atlas](https://shundazhang.github.io/side-channel-atlas/)
 - [Penetration Testing Atlas](https://shundazhang.github.io/penetration-testing/)
-- [AI & Agent Atlas](https://shundazhang.github.io/ai-agent-atlas/)
 - [OSINT & GEO Atlas](https://shundazhang.github.io/osint-atlas/)
+
+### New technologies
+
+- [AI & Agent Atlas](https://shundazhang.github.io/ai-agent-atlas/)
 - [Blockchain & Crypto Atlas](https://shundazhang.github.io/blockchain-atlas/)
-- [GM / SM Cryptography Atlas](https://shundazhang.github.io/gm-sm-atlas/)
 
 The résumé is a concise bilingual technical profile, with selected experience, projects, teaching and education. It excludes personal contact information and private source documents. ByteDance work is described only by broad technical areas, with a confidentiality note.
 

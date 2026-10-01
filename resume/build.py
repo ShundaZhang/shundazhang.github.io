@@ -10,7 +10,7 @@ def build(lang):
     labels=[('experience',t('Experience','工作经历')),('projects',t('Selected projects','项目经历')),('talks',t('Talks & teaching','演讲与教学')),('background',t('Technical background','技术背景'))]
     body=f'''<header class="profile"><p class="kicker">{t('TECHNICAL RÉSUMÉ','技术履历')}</p><h1>ShundaZhang</h1><p class="specialty">{t('Systems & hardware security · Confidential computing · Cryptography','系统与硬件安全 · 机密计算 · 密码学')}</p>
 <p>{t('I work on hardware and systems security at ByteDance, with a focus on cryptography, chip security, trusted execution and platform trust. Previously at Intel, I worked as a technical lead, security researcher and cloud security engineer on SGX, TDX and their software stacks. My experience combines security architecture review, hands-on validation and low-level software engineering.','我目前在字节跳动从事硬件与系统安全工作，关注密码学、芯片安全、可信执行及平台信任。此前在 Intel 担任技术负责人、安全研究员和云安全工程师，长期参与 SGX、TDX 及其软件栈的工作，结合安全架构审查、实战验证与底层软件工程。')}</p>
-<nav class="profile-links" aria-label="{t('Profile links','个人页面')}"><a href="https://github.com/ShundaZhang">GitHub</a><a href="{ctf}">{t('CTF record','CTF 记录')}</a><a href="{home}">{t('Projects & learning notes','项目与学习笔记')}</a></nav></header>
+<nav class="profile-links" aria-label="{t('Profile links','个人页面')}"><a href="https://github.com/ShundaZhang">GitHub</a><a href="{ctf}">{t('CTF record','CTF 记录')}</a><a href="{home}#knowledge">{t('Knowledge Map','知识体系')}</a></nav></header>
 <nav class="contents" aria-label="{t('On this page','本页目录')}">{''.join(f'<a href="#{ident}">{label}</a>' for ident,label in labels)}</nav>
 <section id="experience"><h2>{labels[0][1]}</h2>
 <article class="experience" id="bytedance"><h3>ByteDance <span>{t('Hardware & systems security · 2024–present','硬件与系统安全 · 2024–至今')}</span></h3>
