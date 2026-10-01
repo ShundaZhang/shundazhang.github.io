@@ -8,8 +8,8 @@ The homepage groups independent entries into four categories:
 
 ### About me
 
-- [My CTF](https://shundazhang.github.io/ctf/)
 - [Résumé](https://shundazhang.github.io/resume/)
+- [My CTF](https://shundazhang.github.io/ctf/)
 
 ### Cryptography
 
@@ -20,10 +20,10 @@ The homepage groups independent entries into four categories:
 
 ### Security
 
-- [RISC-V Security Atlas](https://shundazhang.github.io/riscv-security-atlas/)
 - [TEE / TDX / SGX Atlas](https://shundazhang.github.io/tee-tdx-sgx/)
 - [Trusted Boot & Attestation Atlas](https://shundazhang.github.io/trusted-boot-attestation-atlas/)
 - [CPU Side-Channel Atlas](https://shundazhang.github.io/side-channel-atlas/)
+- [RISC-V Security Atlas](https://shundazhang.github.io/riscv-security-atlas/)
 - [Penetration Testing Atlas](https://shundazhang.github.io/penetration-testing/)
 - [OSINT & GEO Atlas](https://shundazhang.github.io/osint-atlas/)
 
