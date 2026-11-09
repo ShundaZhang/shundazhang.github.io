@@ -1,6 +1,10 @@
 """Bilingual chapter content and primary references."""
 
+from ai import AI_SOURCES, ai_chapter
+from diagrams import address_spaces, cache_schematics, sv39_fields
+
 SOURCES = {
+    **AI_SOURCES,
     'intel': ('https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html', 'Intel SDM', 'Intel SDM'),
     'intel-opt': ('https://www.intel.com/content/www/us/en/developer/articles/technical/intel64-and-ia32-architectures-optimization.html', 'Intel Optimization Reference Manual', 'Intel 优化参考手册'),
     'rv': ('https://riscv.org/specifications/ratified/', 'RISC-V ratified specifications', 'RISC-V 正式规范'),
@@ -19,6 +23,9 @@ SOURCES = {
     'iommu': ('https://docs.riscv.org/reference/iommu/', 'RISC-V IOMMU architecture', 'RISC-V IOMMU 架构'),
     'qemu': ('https://www.qemu.org/docs/master/system/riscv/virt.html', 'QEMU RISC-V virt platform', 'QEMU RISC-V virt 平台'),
     'perf': ('https://docs.kernel.org/admin-guide/perf-security.html', 'Linux perf events and access control', 'Linux perf 事件与访问控制'),
+    'linux-pte': ('https://docs.kernel.org/mm/page_tables.html', 'Linux page tables', 'Linux 页表文档'),
+    'linux-vma': ('https://docs.kernel.org/mm/process_addrs.html', 'Linux process addresses and VMAs', 'Linux 进程地址与 VMA'),
+    'linux-tlb': ('https://docs.kernel.org/core-api/cachetlb.html', 'Linux cache and TLB invalidation', 'Linux 缓存与 TLB 失效'),
     'roofline': ('https://digicoll.lib.berkeley.edu/record/136692/files/EECS-2008-134.pdf', 'Williams et al. · Roofline', 'Williams 等 · Roofline 原论文'),
 }
 
@@ -103,9 +110,17 @@ def chapters(t, p, code, table, flow, link, refs):
              '在此模型中，0x1234 映射到第 72 组，偏移 52，tag 为 0。真实 LLC 可能用物理地址的哈希选 slice 和组。'))
          +p(t('Cold misses happen on first touch, capacity misses occur when the working set exceeds available capacity, and conflict misses occur when too many active lines map to one set. In multicore systems, invalidation can cause additional coherence misses. Increasing ways can reduce conflicts while changing lookup cost.',
               '冷未命中来自首次访问，容量未命中来自工作集超出容量，冲突未命中来自过多活跃行落到同一组。多核系统还可能因一致性失效而重新取数。增加路数可减轻冲突，同时也会改变查找成本。'))
-         +exercise('labs',('Try the cache mapper →','打开缓存映射实验 →'),('Keep capacity fixed and change ways from 4 to 1. Explain why the set and tag fields change.','保持容量不变，把路数从 4 改到 1，解释组索引与 tag 位数为何变化。'),'#cache-mapping')),
+         +cache_schematics(t)
+         +exercise('labs',('Try the cache mapper →','打开缓存映射实验 →'),('Enter 0x3234 and change ways from 4 to 1. Explain why the same address now uses a different set and tag.','输入 0x3234，再把路数从 4 改到 1，解释为何同一地址会选中不同的组索引与 tag。'),'#cache-mapping')),
         ('policies',t('Follow a miss and a dirty eviction','跟踪未命中与脏行逐出'),
-         p(t('On a read miss, an implementation can allocate an entry to track the outstanding request, fetch the line from a lower level and resume dependent loads once data arrives. A replacement policy selects a victim line. With write-back, a dirty victim needs writeback. Write-through forwards writes to the lower level, usually through buffering. On a store miss, write-allocate fills the line, while no-write-allocate can send the store onward.',
+         picture(('A read miss in a write-back cache','写回缓存中的一次读未命中'),[
+             (('Check ways','检查路位'),('No valid tag matches in the selected set.','所选组内没有有效 tag 匹配。')),
+             (('Select a slot','选择路位'),('Use a free way or choose a victim.','使用空闲路位或选择牺牲行。')),
+             (('Preserve dirty data','保存脏数据'),('Write back a modified victim if needed.','必要时回写已修改的牺牲行。')),
+             (('Fill and resume','填入并继续'),('Install the incoming line and satisfy the waiting load.','填入新行，满足等待中的加载。')),
+         ],('A core may overlap the writeback and the new request. The boxes show the logical responsibilities.',
+             '核心可以重叠回写与新请求，图示区分各步骤承担的工作。'))
+         +p(t('On a read miss, an implementation can allocate an entry to track the outstanding request, fetch the line from a lower level and resume dependent loads once data arrives. A replacement policy selects a victim line. With write-back, a dirty victim needs writeback. Write-through forwards writes to the lower level, usually through buffering. On a store miss, write-allocate fills the line, while no-write-allocate can send the store onward.',
              '读未命中时，处理器可分配一个在途请求项，从下一级取回缓存行，并在数据返回时继续依赖的加载。替换策略决定逐出哪一行。写回缓存逐出脏行前要回写，写直达通常经缓冲把写入传给下一级。写未命中时，写分配会先填入缓存行，非写分配可把写入转交下一级。'),
            t('AMAT = hit time + miss rate × miss penalty for a single cache level. With 1 ns hit time, 5% miss rate and 40 ns extra penalty, AMAT is 3 ns. For multiple levels use the lower level’s conditional miss rate when following an upper-level miss. Prefetching and overlapped requests change observed throughput.',
              '单级缓存的 AMAT = 命中时间 + 未命中率 × 额外代价。若命中 1 ns、未命中率 5%、额外代价 40 ns，则 AMAT 为 3 ns。多级缓存递推时，用上一级未命中后下一级的条件未命中率。预取和请求重叠会改变实测吞吐。'),
@@ -115,6 +130,17 @@ def chapters(t, p, code, table, flow, link, refs):
     ]
 
     memory = [
+        ('mappings',t('A process address map and its physical backing','进程地址空间与物理页的关系'),
+         picture(('Common regions in a process address space','进程虚拟地址空间中的常见区域'),[
+             (('Program image','程序映像'),('Executable code, read-only constants and writable data from the loaded image.','加载后的代码、只读常量和可写数据。')),
+             (('Heap and anonymous mappings','堆与匿名映射'),('Allocator arenas and other anonymous virtual regions.','分配器使用的堆区和其他匿名虚拟区域。')),
+             (('File mappings','文件映射'),('Shared libraries or file-backed regions created by mmap.','共享库或 mmap 创建的文件后备区域。')),
+             (('Stacks and gaps','栈与空洞'),('Thread stacks, guard regions and unmapped addresses.','线程栈、保护区域和未映射地址。')),
+         ],('These are categories, not a fixed address order. ASLR, the loader and the OS decide actual placement.',
+             '这些是区域类型，具体地址布局由 ASLR、加载器和操作系统决定。'))
+         +p(t('On Linux, a VMA describes a contiguous virtual range and its policy, including permissions and backing. A page-table entry describes one active hardware mapping or the state used to resolve it. One VMA can contain many pages, some not yet resident. Contiguous virtual pages can map to noncontiguous physical frames. Two address spaces can also map the same frame at different virtual addresses.',
+             'Linux 的 VMA 描述一段连续虚拟地址及其策略，包括权限和后备对象。页表项描述单个硬件映射，或保留供后续解析的状态。一段 VMA 可含许多页，其中一部分尚未驻留。连续虚拟页可以映射到离散物理页，两个地址空间也能用不同虚拟地址映射同一物理页。'))
+         +refs(('linux-vma','linux-pte'))),
         ('translation',t('From virtual address to physical address','从虚拟地址到物理地址'),
          picture(('Load address translation','一次加载的地址翻译'),[
              (('Virtual address','虚拟地址'),('The core computes the effective address.','核心计算有效地址。')),
@@ -133,6 +159,39 @@ def chapters(t, p, code, table, flow, link, refs):
               '以 0x40123456 为例，Sv39 取出 VPN[2:0] = (1, 0, 0x123)，偏移为 0x456。若允许访问的 4 KiB 叶项给出物理页号 0x81234，得到物理地址 0x81234456。有效的页表项仍可拒绝读、写或执行。共享映射修改后，OS 还需协调可能保留旧翻译的其他核心或 hart 执行失效。'))
          +exercise('labs',('Open the Sv39 decoder →','打开 Sv39 地址实验 →'),('Check which field changes if you add 4 KiB to the virtual address.','虚拟地址加 4 KiB 后，检查哪个字段发生变化。'),'#sv39')
          +refs(('intel','rvpriv'))),
+        ('walk',t('Walk Sv39 with real indices','用具体索引逐级走一遍 Sv39'),
+         sv39_fields(t)
+         +picture(('Example page walk after a TLB miss','TLB 未命中后的一次页表遍历'),[
+             (('Root table','根页表'),('satp.PPN = 0x80000. Read root[1] at 0x80000008. It points to 0x80001000.','satp.PPN = 0x80000。读 0x80000008 的 root[1]，指向 0x80001000。')),
+             (('Middle table','中间页表'),('Read middle[0] at 0x80001000. It points to 0x80002000.','读 0x80001000 的 middle[0]，指向 0x80002000。')),
+             (('Leaf table','末级页表'),('Read leaf[0x123] at 0x80002918. The valid leaf supplies PPN 0x81234.','读 0x80002918 的 leaf[0x123]，有效叶项给出 PPN 0x81234。')),
+             (('Physical byte','物理字节'),('Combine PPN and offset. PA = 0x81234000 + 0x456 = 0x81234456.','拼接页号与偏移。PA = 0x81234000 + 0x456 = 0x81234456。')),
+         ],('Example assumes a permitted 4 KiB leaf. Each Sv39 table holds 512 eight-byte entries. The PTE address is table base + index × 8.',
+             '假设命中允许访问的 4 KiB 叶项。每张 Sv39 页表有 512 个八字节条目。页表项地址等于表基址加索引 × 8。'))
+         +rows([('Entry information','页表项信息'),('x86-64','x86-64'),('RISC-V Sv39','RISC-V Sv39')],[
+             [('Validity and access','有效性与权限'),('P, R/W, U/S and XD/NX where enabled. Permissions can constrain access at multiple levels.','P、R/W、U/S，以及启用时的 XD/NX。多个层级的权限均可能约束访问。'),('V, R, W, X and U, with further checks such as SUM and MXR.','V、R、W、X 与 U，还要检查 SUM、MXR 等条件。')],
+             [('Leaf or pointer','叶项或下一级指针'),('PT entries map 4 KiB pages. The PS bit at supported levels selects a larger leaf.','末级表项映射 4 KiB 页，支持大页的层级可用 PS 位选择大页叶项。'),('A valid PTE with R=W=X=0 points to the next table. A valid readable or executable entry can be a leaf.','有效项的 R=W=X=0 时指向下一级。合法的可读或可执行项可作为叶项。')],
+             [('Usage tracking','访问状态'),('Accessed and Dirty bits record usage as specified.','Accessed 和 Dirty 位按架构规则记录使用状态。'),('A and D bits track accesses and writes. Update or fault behavior depends on the implemented mode.','A、D 记录访问与写入，更新或触发故障取决于实现模式。')],
+         ])
+         +refs(('intel','rvpriv','linux-pte'))),
+        ('management',t('What the OS does when a mapping changes','映射变化时操作系统做什么'),
+         picture(('Demand paging after a new anonymous mapping','建立匿名映射后的按需分配'),[
+             (('mmap','mmap'),('Record an allowed virtual range in a VMA. The backing frames can be allocated later.','在 VMA 记录允许访问的虚拟范围，物理页可以稍后分配。')),
+             (('First write','首次写入'),('An absent translation faults. The handler checks the address and write permission against the VMA.','尚无翻译时触发缺页。处理程序按 VMA 检查地址与写权限。')),
+             (('Populate','填充'),('Allocate and zero the backing frame as needed, then install a valid PTE.','按需分配并清零后备页，再安装有效 PTE。')),
+             (('Retry','重试'),('The faulting instruction can retry. An invalid access may instead be reported to the process.','重新执行故障指令。非法访问则可能作为错误通知进程。')),
+         ],('This example follows a valid first write. File-backed faults may instead obtain a page through the page cache.',
+             '此图以合法的首次写入为例。文件映射的缺页也可能通过页缓存取得后备页。'))
+         +address_spaces(t)
+         +p(t('After fork, private writable mappings can share backing with writes blocked in their page-table entries. If B writes while the page is still shared, the OS handles the fault, copies the page and updates B’s mapping. A permission fault is therefore sometimes part of normal memory management.',
+              'fork 后，私有可写映射可先共享后备页，并在双方页表项禁止写入。若 B 在页面仍共享时写入，OS 处理故障、复制页面并更新 B 的映射。权限故障因此也可能是正常内存管理的一环。'))
+         +picture(('Unmap a page that may be cached on another core','取消映射时，另一核心可能还缓存着旧翻译'),[
+             (('Update PTE','更新页表项'),('Remove the mapping or lower its permissions.','移除映射或收紧权限。')),
+             (('Invalidate','使旧翻译失效'),('Invalidate locally and coordinate relevant remote cores or harts.','在本地失效，并协调相关远端核心或 hart。')),
+             (('Complete','确认完成'),('Once stale access is ruled out and references are gone, the old frame can be reused.','确保旧访问路径失效且引用释放后，旧页框才可复用。')),
+         ],('PCID and ASID label translation contexts. A changed mapping can still require a TLB shootdown on other CPUs.',
+             'PCID 和 ASID 给翻译上下文加标签。修改映射时，仍可能需要在其他 CPU 上执行 TLB shootdown。'))
+         +refs(('linux-vma','linux-tlb','rvpriv'))),
         ('dram',t('DRAM, bandwidth and NUMA','DRAM、带宽与 NUMA'),
          p(t('A DRAM controller maps addresses across channels, ranks, banks and rows. Activating a row loads it into a row buffer, so accesses to an open row can cost less than switching rows. Banks and channels enable overlap. Refresh, controller queues and read/write turnarounds affect latency under load.',
              'DRAM 控制器把地址分到通道、rank、bank 与行。激活行会把它读入行缓冲，访问已打开的行通常比换行成本低。多个 bank 和通道可重叠工作。刷新、控制器队列以及读写方向切换都会影响负载下的延迟。'),
@@ -222,4 +281,8 @@ def chapters(t, p, code, table, flow, link, refs):
                      t('Separate cache coherence, false sharing and cross-address memory ordering.','理解缓存一致性、伪共享以及跨地址的内存顺序。')),parallel),
         ('performance',('CPI / MEASUREMENT',t('Measure what costs time','测出时间花在哪里'),
                         t('Use CPI, Amdahl, Roofline and hardware counters to test a performance hypothesis.','用 CPI、Amdahl、Roofline 和硬件计数器检验性能假设。')),performance),
+        ('ai',('GPU / MEMORY SYSTEMS',t('How AI changes the system','AI 怎样改变体系结构'),
+               t('Follow inference through CPUs, GPUs, HBM, CXL and processing near memory.',
+                 '沿推理的数据路径理解 CPU、GPU、HBM、CXL 和近存／存内计算。')),
+         ai_chapter(t, p, code, rows, picture, exercise, refs)),
     ]

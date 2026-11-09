@@ -56,10 +56,30 @@ function showCpi(inputs) {
                   `分支开销 ${overhead.toFixed(4)} 周期/指令 · 估计 CPI ${(1 + overhead).toFixed(4)}`);
 }
 
+function showKvCapacity(inputs) {
+  if (!inputs.every(input => input.value !== "" && input.validity.valid)) {
+    return localize("Enter positive whole numbers within each field’s range.",
+                    "请在各字段范围内输入正整数。");
+  }
+
+  const [layers, heads, dimension, bytes, tokens, sequences] = inputs.map(input => BigInt(input.valueAsNumber));
+  const bytesPerToken = 2n * layers * heads * dimension * bytes;
+  const bytesPerSequence = bytesPerToken * tokens;
+  const total = bytesPerSequence * sequences;
+  const number = new Intl.NumberFormat(isChinese ? "zh-CN" : "en", { maximumSignificantDigits: 5 });
+  const gib = value => number.format(Number(value) / (2 ** 30));
+  const kib = value => number.format(Number(value) / (2 ** 10));
+  return localize(
+    `${kib(bytesPerToken)} KiB per token · ${gib(bytesPerSequence)} GiB per sequence · ${gib(total)} GiB total`,
+    `每 token ${kib(bytesPerToken)} KiB · 每序列 ${gib(bytesPerSequence)} GiB · 合计 ${gib(total)} GiB`
+  );
+}
+
 for (const [outputId, ids, calculate] of [
   ["cache-result", ["cache-address", "cache-ways"], showCache],
   ["sv39-result", ["sv39-address"], showSv39],
   ["cpi-result", ["cpi-branch", "cpi-miss", "cpi-penalty"], showCpi],
+  ["kv-result", ["kv-layers", "kv-heads", "kv-dimension", "kv-bytes", "kv-tokens", "kv-sequences"], showKvCapacity],
 ]) {
   const output = document.getElementById(outputId);
   const inputs = ids.map(id => document.getElementById(id));

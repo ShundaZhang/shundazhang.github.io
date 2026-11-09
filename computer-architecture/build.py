@@ -15,6 +15,7 @@ NAV = (
     ('io', 'I/O', 'I/O'),
     ('parallel', 'Multicore', '多核'),
     ('performance', 'Performance', '性能'),
+    ('ai', 'AI Systems', 'AI 体系结构'),
     ('labs', 'Labs', '实验'),
 )
 
@@ -124,13 +125,13 @@ def render(lang):
         slug = filename(name)
         cards.append(f'<a class="topic" href="{slug}"><span class="eyebrow">{index:02} / {escape(info[0])}</span>'
                      f'<h3>{escape(title(name))}</h3><p>{escape(info[2])}</p><span class="topic-arrow" aria-hidden="true">→</span></a>')
-    cards.append(f'<a class="topic" href="{filename("labs")}"><span class="eyebrow">08 / PRACTICE</span><h3>{t("Labs","实验")}</h3><p>{t("Decode an address, exercise a cache, and vary a CPI budget.","拆解地址，试算缓存映射，调整 CPI 预算。")}</p><span class="topic-arrow" aria-hidden="true">→</span></a>')
+    cards.append(f'<a class="topic" href="{filename("labs")}"><span class="eyebrow">09 / PRACTICE</span><h3>{t("Labs","实验")}</h3><p>{t("Decode an address, exercise a cache, and estimate CPI and KV memory.","拆解地址，试算缓存映射、CPI 和 KV 容量。")}</p><span class="topic-arrow" aria-hidden="true">→</span></a>')
     intro = ('SYSTEMS / FIELD GUIDE', t('Computer Architecture','计算机体系结构'),
              t('Follow instructions, addresses and bytes through a computer. Compare x86-64 and RISC-V at the ISA, core and platform levels.',
                '沿指令、地址与数据理解计算机如何工作，用 x86-64 和 RISC-V 对照指令集、核心与平台三个层次。'))
     body = section('route',t('A route through the course','课程学习路线'),
-                   paragraph(t('Start with C, pointers, hexadecimal and basic Boolean logic. Work through chapters 01–05 in order, then study multicore and performance. Use the exercises to check whether you can explain an observation before opening a manual.',
-                               '先具备 C、指针、十六进制和基本布尔逻辑知识。按顺序读完 01–05 章，再学习多核与性能。遇到观测结果，先用实验检查自己的解释，再查手册。'))
+                   paragraph(t('Start with C, pointers, hexadecimal and basic Boolean logic. Work through chapters 01–05 in order, then study multicore, performance and AI systems. Use the exercises to check whether you can explain an observation before opening a manual.',
+                               '先具备 C、指针、十六进制和基本布尔逻辑知识。按顺序读完 01–05 章，再学习多核、性能与 AI 体系结构。遇到观测结果，先用实验检查自己的解释，再查手册。'))
                    + '<div class="topic-grid">'+''.join(cards)+'</div>')
     body += section('reading',t('Courses and manuals','课程与手册'),
                     paragraph(t('Berkeley CS61C pairs lecture notes and labs with RISC-V assembly and datapath design. MIT Computation Structures builds from logic and state to pipelines, caches and virtual memory. The ISA manuals define exact behavior, and Linux driver documentation explains how the OS uses platform interfaces.',
@@ -161,22 +162,37 @@ def render(lang):
     fields += lab_input('cpi-penalty',t('Cycles per misprediction','每次误预测代价（周期）'),'15','number','min="0" max="1000"')
     cpi_lab = lab('cpi',fields,t('The model starts with base CPI 1 and adds branch frequency × misprediction rate × penalty. It assumes the added work does not overlap. Real out-of-order cores require measurement.',
                                 '模型从基础 CPI 1 开始，加上分支频率 × 误预测率 × 代价，并假设开销没有重叠。真实乱序核心需要实测。'))
+    kv_fields = ''.join(
+        lab_input('kv-'+key,t(en,zh),default,'number',f'min="1" max="{maximum}"')
+        for key, en, zh, default, maximum in [
+            ('layers','Layers','层数','32',512),
+            ('heads','KV heads','KV 头数','8',256),
+            ('dimension','Head dimension','每头维度','128',1024),
+            ('bytes','Bytes per element','每元素字节数','2',8),
+            ('tokens','Cached tokens per sequence','每序列缓存 token 数','32768',1048576),
+            ('sequences','Active sequences','并发序列数','8',1024),
+        ]
+    )
+    kv_lab = lab('kv',kv_fields,t(
+        'This payload assumes equal-length sequences, standard K and V tensors and fixed bytes per element. It excludes model weights, runtime buffers and allocator overhead.',
+        '有效载荷假设序列等长、采用标准 K 与 V 张量且每元素字节数固定。权重、运行时缓冲和分配器开销需要另算。'))
     labs = [
         ('cache-mapping',t('Map an address to a cache set','把地址映射到缓存组'),cache_lab),
         ('sv39',t('Split a Sv39 address','拆解 Sv39 地址'),memory_lab),
         ('cpi',t('Budget branch stalls','估算分支带来的停顿'),cpi_lab),
+        ('kv-capacity',t('Budget KV cache capacity','估算 KV cache 容量'),kv_lab),
         ('inspect',t('Inspect an actual platform','观察实际平台'),paragraph(t(
             'On Linux, compare lscpu, /proc/cpuinfo, /sys/devices/system/cpu/cpu0/cache/index*/ and /proc/interrupts. For each cache, inspect level, type, coherency_line_size and shared_cpu_list. Tool and field availability depends on the kernel and hardware. In QEMU, inspect the guest ISA and device model. Collect cache latency and PMU measurements on real hardware or a model that explicitly simulates timing.',
             '在 Linux 上对照 lscpu、/proc/cpuinfo、/sys/devices/system/cpu/cpu0/cache/index*/ 与 /proc/interrupts。对每级缓存查看 level、type、coherency_line_size 和 shared_cpu_list。工具与字段可用性取决于内核和硬件。在 QEMU 中观察客体 ISA 与设备模型，缓存延迟和 PMU 测量用实机或明确模拟时序的模型完成。'))
          +references(('qemu','perf','cs61c'))),
     ]
-    lab_intro = ('08 / PRACTICE',t('Test the model','动手验证模型'),
-                 t('Try three small calculations in the browser, then compare the model with a real platform.',
-                   '先在浏览器内做三个小实验，再回到实际平台检验模型的适用范围。'))
+    lab_intro = ('09 / PRACTICE',t('Test the model','动手验证模型'),
+                 t('Try four small calculations in the browser, then compare the model with a real platform.',
+                   '先在浏览器内做四个小实验，再回到实际平台检验模型的适用范围。'))
     (ROOT/filename('labs')).write_text(shell('labs',lab_intro,''.join(section(*part) for part in labs),labs),encoding='utf-8')
 
 
 if __name__ == '__main__':
     for language in ('en', 'zh'):
         render(language)
-    print('Built 18 bilingual architecture pages')
+    print('Built 20 bilingual architecture pages')
