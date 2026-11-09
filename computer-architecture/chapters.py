@@ -1,7 +1,7 @@
 """Bilingual chapter content and primary references."""
 
 from ai import AI_SOURCES, ai_chapter
-from commons import commons_figure
+from commons import commons_figure, four_way_cache_figure
 from diagrams import address_spaces, cache_schematics, sv39_fields
 
 SOURCES = {
@@ -118,11 +118,12 @@ def chapters(t, p, code, table, flow, link, refs):
              ('Address fields select one cache entry. A comparator checks its tag and valid bit.','地址字段选择一个条目，比较器检查 tag 和有效位。'),
              ('Follow Index to a row, then compare Tag. This is the one-way version of the preceding four-way example.',
               '沿原图的 Index 选中一行，再检查 Tag。这相当于上面四路算例的单路版本。'))
-         +commons_figure(t,'cache-four-way',
+         +four_way_cache_figure(t,
              ('Four-way lookup in hardware','四路组相联的硬件查找'),
-             ('The same index selects a row in four ways. Comparators and a selector choose the matching data.','同一索引在四路中各选择一行，由比较器和选择器选出匹配数据。'),
-             ('Follow Set index to the same row in all four ways. The four Tag comparators work in parallel. Word offset picks a word within each candidate line, and the Way selector sends the matching way’s word to the CPU on a hit.',
-              '沿着 Set index（组索引）找到四路中的同一行，四个 Tag 比较器并行工作。Word offset（字偏移）从每个候选缓存行中选字；命中时，Way selector（路选择器）把命中那一路的字送回 CPU。'))
+             ('Four comparators and valid bits on the left determine which way can drive the data output from the multiplexers on the right.',
+              '左侧的四个比较器和有效位决定哪一路能把右侧多路选择器选出的数据送到输出端。'),
+             ('Start at Index: the two decoders select the same set in the tag and data arrays. On the left, four comparators check tags in parallel, and each result is gated by that way’s valid bit. On the right, the offset feeds the word multiplexers (MUX); only the matching valid way drives the output.',
+              '从 Index（组索引）开始：两个译码器在标签阵列和数据阵列中选中同一组。左侧四个 Comparator（比较器）并行比较 Tag，再分别检查对应路的 Valid Bit（有效位）。右侧的 MUX（多路选择器）按偏移选出行内的字，只有有效且匹配的那一路驱动输出。'))
          +'</div>'
          +exercise('labs',('Try the cache mapper →','打开缓存映射实验 →'),('Enter 0x3234 and change ways from 4 to 1. Explain why the same address now uses a different set and tag.','输入 0x3234，再把路数从 4 改到 1，解释为何同一地址会选中不同的组索引与 tag。'),'#cache-mapping')),
         ('policies',t('Follow a miss and a dirty eviction','跟踪未命中与脏行逐出'),
