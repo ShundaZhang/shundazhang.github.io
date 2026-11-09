@@ -121,8 +121,8 @@ def chapters(t, p, code, table, flow, link, refs):
          +commons_figure(t,'cache-four-way',
              ('Four-way lookup in hardware','四路组相联的硬件查找'),
              ('The same index selects a row in four ways. Comparators and a selector choose the matching data.','同一索引在四路中各选择一行，由比较器和选择器选出匹配数据。'),
-             ('The Japanese labels エントリアドレス, フレームアドレス and ワードアドレス denote the index, tag-side address bits, and word offset in this drawing. Compare its four comparators with the single comparator at left.',
-              '原图日文「エントリアドレス」对应组索引，「フレームアドレス」对应 tag 所用的高位，「ワードアドレス」对应行内字偏移。对照直接映射图中的单个比较器，这里有四路并行比较。'))
+             ('Follow Set index to the same row in all four ways. The four Tag comparators work in parallel. Word offset picks a word within each candidate line, and the Way selector sends the matching way’s word to the CPU on a hit.',
+              '沿着 Set index（组索引）找到四路中的同一行，四个 Tag 比较器并行工作。Word offset（字偏移）从每个候选缓存行中选字；命中时，Way selector（路选择器）把命中那一路的字送回 CPU。'))
          +'</div>'
          +exercise('labs',('Try the cache mapper →','打开缓存映射实验 →'),('Enter 0x3234 and change ways from 4 to 1. Explain why the same address now uses a different set and tag.','输入 0x3234，再把路数从 4 改到 1，解释为何同一地址会选中不同的组索引与 tag。'),'#cache-mapping')),
         ('policies',t('Follow a miss and a dirty eviction','跟踪未命中与脏行逐出'),

@@ -1,4 +1,4 @@
-"""Attribution and rendering for unmodified Wikimedia Commons diagrams."""
+"""Attribution and rendering for Wikimedia Commons diagrams."""
 
 from html import escape
 from urllib.parse import quote
@@ -30,11 +30,13 @@ def commons_figure(t, key, title, alt, note):
     title, alt, note = (escape(t(*value), quote=True) for value in (title, alt, note))
     source = 'https://commons.wikimedia.org/wiki/File:' + quote(filename)
     asset = f'assets/commons/{key}.svg'
+    changes = (t('Labels translated into English', '图中标注已译为英文') if key == 'cache-four-way'
+               else t('Unmodified SVG', '原始 SVG，未经修改'))
     return (
         f'<figure class="wiki-figure" id="figure-{key}"><figcaption><strong>{title}</strong></figcaption>'
         f'<a class="wiki-image" href="{asset}" target="_blank" rel="noopener"'
         f' aria-label="{t("Open original image","打开原图")} · {title}">'
         f'<img src="{asset}" width="{width}" height="{height}" loading="lazy" decoding="async" alt="{alt}"></a>'
         f'<p>{note}</p><small>{escape(author)} · <a href="{source}">Wikimedia Commons</a> · '
-        f'<a href="{license_url}">{license_name}</a> · {t("Unmodified SVG","原始 SVG，未经修改")}</small></figure>'
+        f'<a href="{license_url}">{license_name}</a> · {changes}</small></figure>'
     )
