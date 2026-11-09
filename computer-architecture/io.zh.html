@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="沿一条设备队列理解 MMIO、PCIe、中断、DMA 和 IOMMU。">
+<title>I/O · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="io.html" data-atlas-lang="en">EN</a><a href="io.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html" aria-current="page">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">DEVICE / BUS</span><h1>设备如何传输数据</h1><p>沿一条设备队列理解 MMIO、PCIe、中断、DMA 和 IOMMU。</p><nav class="jumps" aria-label="本页目录"><a href="#registers">发现设备并访问寄存器</a><a href="#dma">跟踪一次 DMA 完成</a></nav></div></div></section>
+<div class="wrap reading"><section id="registers" class="chapter-section"><h2>发现设备并访问寄存器</h2><p>PCIe 设备暴露配置空间。枚举时系统发现设备，确定 BAR 所描述的地址窗口大小、分配地址并绑定驱动。驱动映射 BAR，再通过 readl/writel 等 MMIO 接口访问寄存器。读寄存器可能有副作用，posted write 也可能在 CPU 继续执行后才到达设备。排序遵循设备与总线规则。</p><p>x86 平台可以同时提供 MMIO 和独立的端口 I/O 空间，后者使用 IN/OUT。RISC-V 平台通常以 MMIO 暴露设备寄存器。驱动还需要发现平台设备，例如通过 PCI 配置、ACPI 表或设备树。QEMU virt 是一个有文档的 RISC-V 平台实例。</p><ul class="sources" aria-label="一手资料"><li><a href="https://docs.kernel.org/driver-api/device-io.html">Linux 设备 I/O 访问接口 ↗</a></li><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://www.qemu.org/docs/master/system/riscv/virt.html">QEMU RISC-V virt 平台 ↗</a></li></ul></section><section id="dma" class="chapter-section"><h2>跟踪一次 DMA 完成</h2><figure class="flow"><figcaption>基于队列的设备传输</figcaption><ol><li><strong>准备</strong><span>驱动映射 DMA 缓冲区，把设备可见地址写入描述符。</span></li><li><strong>发布</strong><span>保证描述符写入顺序，交出所有权，再写 MMIO 门铃。</span></li><li><strong>传输</strong><span>设备通过 DMA 读写内存，IOMMU 可翻译并约束请求。</span></li><li><strong>完成</strong><span>驱动通过中断或轮询发现完成，再按要求同步或解除映射。</span></li></ol><p>CPU 虚拟地址、CPU 物理地址与设备 DMA 地址分别属于不同视图。</p></figure><p>一致性 DMA 分配可维持共享描述符数据的一致性，但设置所有权位之前仍需保证顺序。流式 DMA 映射有方向与所有权生命周期。复用流式映射时，CPU 与设备交接缓冲区要执行相应同步。设备停止使用后才能解除映射。</p><p>在常见 x86 PCIe 系统中，中断经 APIC 基础设施投递，MSI/MSI-X 由设备发起写事务。RISC-V 板卡可能采用 PLIC，也可能使用 AIA 的 APLIC、IMSIC 等组件。OS 管理屏蔽、优先级和亲和性。高完成率下，轮询用 CPU 时间换取较低的通知开销。</p><ul class="sources" aria-label="一手资料"><li><a href="https://docs.kernel.org/core-api/dma-api-howto.html">Linux DMA 映射指南 ↗</a></li><li><a href="https://docs.kernel.org/PCI/msi-howto.html">Linux PCI MSI 指南 ↗</a></li><li><a href="https://docs.riscv.org/reference/aia/index.html">RISC-V 高级中断架构 ↗</a></li><li><a href="https://docs.riscv.org/reference/iommu/">RISC-V IOMMU 架构 ↗</a></li><li><a href="https://www.qemu.org/docs/master/system/riscv/virt.html">QEMU RISC-V virt 平台 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="memory.zh.html">← 内存</a><a href="parallel.zh.html">多核 →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="先在浏览器内做三个小实验，再回到实际平台检验模型的适用范围。">
+<title>实验 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script><script src="labs.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="labs.html" data-atlas-lang="en">EN</a><a href="labs.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html" aria-current="page">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">08 / PRACTICE</span><h1>动手验证模型</h1><p>先在浏览器内做三个小实验，再回到实际平台检验模型的适用范围。</p><nav class="jumps" aria-label="本页目录"><a href="#cache-mapping">把地址映射到缓存组</a><a href="#sv39">拆解 Sv39 地址</a><a href="#cpi">估算分支带来的停顿</a><a href="#inspect">观察实际平台</a></nav></div></div></section>
+<div class="wrap reading"><section id="cache-mapping" class="chapter-section"><h2>把地址映射到缓存组</h2><div class="lab"><div class="lab-controls"><label for="cache-address">地址（十六进制）<input id="cache-address" type="text" value="0x1234" ></label><label for="cache-ways">相联度（1、2、4 或 8）<input id="cache-ways" type="number" value="4" min="1" max="8"></label></div><output id="cache-result" class="lab-result" aria-live="polite"></output><p>模型采用 32 KiB、64 字节行的缓存，输入是按简单位索引映射的教学物理地址。保持容量不变，改变路数，观察组数和 tag 如何变化。</p></div></section><section id="sv39" class="chapter-section"><h2>拆解 Sv39 地址</h2><div class="lab"><div class="lab-controls"><label for="sv39-address">虚拟地址（十六进制）<input id="sv39-address" type="text" value="0x40123456" ></label></div><output id="sv39-result" class="lab-result" aria-live="polite"></output><p>把规范的 64 位 Sv39 虚拟地址拆成三个 9 位索引和一个 12 位偏移。输入 0x0000004000000000 可观察非规范地址。完成翻译还需要页表和权限检查。</p></div></section><section id="cpi" class="chapter-section"><h2>估算分支带来的停顿</h2><div class="lab"><div class="lab-controls"><label for="cpi-branch">分支指令比例（%）<input id="cpi-branch" type="number" value="20" min="0" max="100"></label><label for="cpi-miss">分支中误预测比例（%）<input id="cpi-miss" type="number" value="5" min="0" max="100"></label><label for="cpi-penalty">每次误预测代价（周期）<input id="cpi-penalty" type="number" value="15" min="0" max="1000"></label></div><output id="cpi-result" class="lab-result" aria-live="polite"></output><p>模型从基础 CPI 1 开始，加上分支频率 × 误预测率 × 代价，并假设开销没有重叠。真实乱序核心需要实测。</p></div></section><section id="inspect" class="chapter-section"><h2>观察实际平台</h2><p>在 Linux 上对照 lscpu、/proc/cpuinfo、/sys/devices/system/cpu/cpu0/cache/index*/ 与 /proc/interrupts。对每级缓存查看 level、type、coherency_line_size 和 shared_cpu_list。工具与字段可用性取决于内核和硬件。在 QEMU 中观察客体 ISA 与设备模型，缓存延迟和 PMU 测量用实机或明确模拟时序的模型完成。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.qemu.org/docs/master/system/riscv/virt.html">QEMU RISC-V virt 平台 ↗</a></li><li><a href="https://docs.kernel.org/admin-guide/perf-security.html">Linux perf 事件与访问控制 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="performance.zh.html">← 性能</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

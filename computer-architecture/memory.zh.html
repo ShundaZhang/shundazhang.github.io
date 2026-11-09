@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="对照 x86-64 分页与 RISC-V Sv39，继续追踪 DRAM 和 NUMA 路径。">
+<title>内存 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="memory.html" data-atlas-lang="en">EN</a><a href="memory.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html" aria-current="page">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">TRANSLATION / DRAM</span><h1>从虚拟地址走到 DRAM</h1><p>对照 x86-64 分页与 RISC-V Sv39，继续追踪 DRAM 和 NUMA 路径。</p><nav class="jumps" aria-label="本页目录"><a href="#translation">从虚拟地址到物理地址</a><a href="#dram">DRAM、带宽与 NUMA</a></nav></div></div></section>
+<div class="wrap reading"><section id="translation" class="chapter-section"><h2>从虚拟地址到物理地址</h2><figure class="flow"><figcaption>一次加载的地址翻译</figcaption><ol><li><strong>虚拟地址</strong><span>核心计算有效地址。</span></li><li><strong>TLB</strong><span>命中的翻译项也提供权限信息。</span></li><li><strong>未命中时遍历页表</strong><span>读取 PTE 并检查权限与格式。</span></li><li><strong>物理访问</strong><span>拼接物理页号和页内偏移，再访问存储层次。</span></li></ol><p>TLB 未命中可通过页表遍历解决。无效翻译或权限不符可能引起页故障。</p></figure><div class="table-wrap" tabindex="0" role="region" aria-label="体系结构对照"><table><thead><tr><th scope="col">方面</th><th scope="col">x86-64</th><th scope="col">RV64 Sv39</th></tr></thead><tbody><tr><th scope="row">4 KiB 页</th><td>四级分页采用 48 位线性地址，支持 LA57 的系统可用五级。每级九位索引。</td><td>三级页表，39 位虚拟地址，每级九位索引。</td></tr><tr><th scope="row">根与上下文</th><td>CR3 选择页表根，启用 PCID 时可携带上下文标识。</td><td>satp 含 MODE、ASID 与根物理页号。</td></tr><tr><th scope="row">大页叶项</th><td>支持 2 MiB，以及硬件允许时的 1 GiB。</td><td>上层对齐的叶项可映射 2 MiB 或 1 GiB。</td></tr><tr><th scope="row">翻译维护</th><td>按上下文使用 INVLPG 等架构规定的失效手段。</td><td>SFENCE.VMA 对页表更新和隐式翻译读排序，并按规定影响本 hart 的翻译缓存。</td></tr></tbody></table></div><p>以 0x40123456 为例，Sv39 取出 VPN[2:0] = (1, 0, 0x123)，偏移为 0x456。若允许访问的 4 KiB 叶项给出物理页号 0x81234，得到物理地址 0x81234456。有效的页表项仍可拒绝读、写或执行。共享映射修改后，OS 还需协调可能保留旧翻译的其他核心或 hart 执行失效。</p><aside class="exercise"><strong>动手练习</strong><p>虚拟地址加 4 KiB 后，检查哪个字段发生变化。</p><a href="labs.zh.html#sv39">打开 Sv39 地址实验 →</a></aside><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://docs.riscv.org/reference/isa/priv/supervisor.html">RISC-V 监管级架构 ↗</a></li></ul></section><section id="dram" class="chapter-section"><h2>DRAM、带宽与 NUMA</h2><p>DRAM 控制器把地址分到通道、rank、bank 与行。激活行会把它读入行缓冲，访问已打开的行通常比换行成本低。多个 bank 和通道可重叠工作。刷新、控制器队列以及读写方向切换都会影响负载下的延迟。</p><p>延迟是一次请求花费的时间，带宽是持续的数据传输能力，可受益于多个并行请求。NUMA 机器的页放置决定由哪个内存控制器服务，访问远端节点会增加互连流量。测吞吐时也要记录放置位置与访存模式。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel64-and-ia32-architectures-optimization.html">Intel 优化参考手册 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="cache.zh.html">← 缓存</a><a href="io.zh.html">I/O →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

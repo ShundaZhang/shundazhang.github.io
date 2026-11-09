@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="跟算地址映射，再理解局部性、替换、写策略和未命中代价。">
+<title>缓存 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="cache.html" data-atlas-lang="en">EN</a><a href="cache.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html" aria-current="page">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">LOCALITY / CACHE</span><h1>数据在缓存里怎样存放</h1><p>跟算地址映射，再理解局部性、替换、写策略和未命中代价。</p><nav class="jumps" aria-label="本页目录"><a href="#mapping">把地址映射到缓存行</a><a href="#policies">跟踪未命中与脏行逐出</a></nav></div></div></section>
+<div class="wrap reading"><section id="mapping" class="chapter-section"><h2>把地址映射到缓存行</h2><p>重复使用数据体现时间局部性，访问相邻字节体现空间局部性。缓存按行传输。简单组相联缓存把地址拆成 tag、组索引和行内偏移，再与该组各个有效路位的 tag 比较。</p><figure class="flow"><figcaption>32 KiB、四路缓存算例</figcaption><ol><li><strong>每行 64 B</strong><span>低六位是行内偏移。</span></li><li><strong>128 组</strong><span>32 KiB ÷ (64 B × 4) 得到 128 组，索引占七位。</span></li><li><strong>每组四路</strong><span>所选组最多容纳四条 tag 不同的有效行。</span></li></ol><p>在此模型中，0x1234 映射到第 72 组，偏移 52，tag 为 0。真实 LLC 可能用物理地址的哈希选 slice 和组。</p></figure><p>冷未命中来自首次访问，容量未命中来自工作集超出容量，冲突未命中来自过多活跃行落到同一组。多核系统还可能因一致性失效而重新取数。增加路数可减轻冲突，同时也会改变查找成本。</p><aside class="exercise"><strong>动手练习</strong><p>保持容量不变，把路数从 4 改到 1，解释组索引与 tag 位数为何变化。</p><a href="labs.zh.html#cache-mapping">打开缓存映射实验 →</a></aside></section><section id="policies" class="chapter-section"><h2>跟踪未命中与脏行逐出</h2><p>读未命中时，处理器可分配一个在途请求项，从下一级取回缓存行，并在数据返回时继续依赖的加载。替换策略决定逐出哪一行。写回缓存逐出脏行前要回写，写直达通常经缓冲把写入传给下一级。写未命中时，写分配会先填入缓存行，非写分配可把写入转交下一级。</p><p>单级缓存的 AMAT = 命中时间 + 未命中率 × 额外代价。若命中 1 ns、未命中率 5%、额外代价 40 ns，则 AMAT 为 3 ns。多级缓存递推时，用上一级未命中后下一级的条件未命中率。预取和请求重叠会改变实测吞吐。</p><p>L1I 和 L1D 常分离指令与数据路径。L2 和 LLC 的大小、相联度、共享范围与包容性取决于处理器。支持时可用 x86 CPUID 查询缓存参数。RISC-V 的缓存组织由核心和平台决定，可选的缓存块扩展提供特定维护操作。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://riscv.org/specifications/ratified/">RISC-V 正式规范 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="cpu.zh.html">← CPU 微架构</a><a href="memory.zh.html">内存 →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

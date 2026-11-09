@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="用同一段 C 代码对照指令、寄存器、特权与调用约定。">
+<title>指令集 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="isa.html" data-atlas-lang="en">EN</a><a href="isa.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html" aria-current="page">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">ISA / ABI</span><h1>读懂指令集契约</h1><p>用同一段 C 代码对照指令、寄存器、特权与调用约定。</p><nav class="jumps" aria-label="本页目录"><a href="#bits">从字节、整数和地址开始</a><a href="#contract">ISA、ABI 与平台</a><a href="#trace">跟踪同一个 C 函数</a></nav></div></div></section>
+<div class="wrap reading"><section id="bits" class="chapter-section"><h2>从字节、整数和地址开始</h2><p>寄存器中的值是一串比特，由指令和软件赋予含义。在 8 位教学 ALU 中，0xff + 1 回绕到 0x00，产生无符号进位。补码里 0xff 表示 −1，这次加法没有有符号溢出。反过来，0x7f + 1 得到 0x80，却超出了有符号表示范围。</p><p>字节序决定多字节值在内存中的布局。小端环境存入 0x12345678 后，从低地址到高地址依次是 78 56 34 12。本站示例使用常见的小端 x86-64 与 RV64 Linux 环境。</p><ul class="sources" aria-label="一手资料"><li><a href="https://computationstructures.org/">MIT Computation Structures 课程 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><section id="contract" class="chapter-section"><h2>ISA、ABI 与平台</h2><p>ISA 规定指令、架构寄存器、异常和顺序保证。ABI 补充函数调用、栈布局和二进制接口约定。平台规定中断控制器、固件表和总线等组件及发现方式。微架构则描述某个具体核心如何实现 ISA。</p><div class="table-wrap" tabindex="0" role="region" aria-label="体系结构对照"><table><thead><tr><th scope="col">方面</th><th scope="col">x86-64</th><th scope="col">RISC-V RV64</th></tr></thead><tbody><tr><th scope="row">编码</th><td>变长编码，单条最长 15 字节。</td><td>基础指令 32 位，C 扩展加入 16 位压缩编码。</td></tr><tr><th scope="row">寄存器与操作数</th><td>基线 64 位模式有 16 个通用寄存器，许多指令允许内存操作数。</td><td>RV64I 有 32 个整数寄存器，含恒为零的 x0。数据访存由 load/store 指令完成。</td></tr><tr><th scope="row">特权</th><td>Ring 0–3，Linux 通常使用 ring 0 和 ring 3。</td><td>M 模式必选，通用系统通常也实现 S、U 模式。</td></tr><tr><th scope="row">发现功能</th><td>CPUID 报告硬件功能，部分功能还需 OS 启用。</td><td>实现选择扩展组合。Linux 应用通过 OS 提供的能力接口检测功能。</td></tr></tbody></table></div><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://docs.riscv.org/reference/isa/unpriv/rv64.html">RV64I 基础指令集 ↗</a></li><li><a href="https://riscv.org/specifications/ratified/">RISC-V 正式规范 ↗</a></li></ul></section><section id="trace" class="chapter-section"><h2>跟踪同一个 C 函数</h2><p>以下示例采用 System V AMD64 与 RISC-V psABI。指针分别从 rdi 或 a0 传入，结果从 rax 或 a0 返回。两个例程都读取一个 64 位数，并按模 2⁶⁴ 加一。</p><pre tabindex="0"><code>uint64_t next(const uint64_t *p) { return *p + 1; }
+
+x86-64 (AT&amp;T)                 RV64I
+movq (%rdi), %rax             ld a0, 0(a0)
+addq $1, %rax                 addi a0, a0, 1
+ret                           ret  # jalr x0, 0(ra)</code></pre><p>x86 CALL 将返回地址压栈。RV64 的常见调用写链接寄存器 ra，非叶函数可能需要保存它。两边的加载都可能触发异常，也都可能由缓存满足。比较不同二进制时，记录提交指令数和实测时间。</p><ul class="sources" aria-label="一手资料"><li><a href="https://gitlab.com/x86-psABIs/x86-64-ABI">System V AMD64 ABI ↗</a></li><li><a href="https://riscv-non-isa.github.io/riscv-elf-psabi-doc/">RISC-V ELF psABI ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="index.zh.html">← 总览</a><a href="cpu.zh.html">CPU 微架构 →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

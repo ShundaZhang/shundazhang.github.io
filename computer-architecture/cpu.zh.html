@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="从数据通路开始，理解流水线、冒险、推测执行和提交。">
+<title>CPU 微架构 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="cpu.html" data-atlas-lang="en">EN</a><a href="cpu.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html" aria-current="page">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">DATAPATH / CORE</span><h1>CPU 内部如何工作</h1><p>从数据通路开始，理解流水线、冒险、推测执行和提交。</p><nav class="jumps" aria-label="本页目录"><a href="#datapath">搭出一条加载指令的数据通路</a><a href="#ooo">从顺序流水线到乱序核心</a></nav></div></div></section>
+<div class="wrap reading"><section id="datapath" class="chapter-section"><h2>搭出一条加载指令的数据通路</h2><p>从寄存器堆、PC、ALU、多路选择器和内存接口开始。控制逻辑根据译码后的操作码选择数据源并开启写入。以 RV64 的 ld rd, imm(rs1) 为例，读取 rs1，将立即数符号扩展后相加，请求八字节，并在指令成功完成时将返回值写入 rd。</p><figure class="flow"><figcaption>五级教学流水线</figcaption><ol><li><strong>IF 取指</strong><span>用 PC 取指。</span></li><li><strong>ID 译码</strong><span>译码并读取源寄存器。</span></li><li><strong>EX 执行</strong><span>计算地址或 ALU 结果。</span></li><li><strong>MEM 访存</strong><span>为加载与存储访问数据存储器。</span></li><li><strong>WB 写回</strong><span>按需写寄存器。</span></li></ol><p>不同指令的阶段可以重叠。实际核心会按自己的设计拆分和调度。</p></figure><p>加载后的依赖 add 可能需要停顿，因为数据到得较晚。时序允许时，旁路可直接将结果转发给依赖阶段。端口冲突是结构冒险，尚未确定方向的分支带来控制冒险，预测错误会撤销其后的年轻指令。</p><ul class="sources" aria-label="一手资料"><li><a href="https://computationstructures.org/">MIT Computation Structures 课程 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><section id="ooo" class="chapter-section"><h2>从顺序流水线到乱序核心</h2><figure class="flow"><figcaption>典型乱序核心的数据流</figcaption><ol><li><strong>前端</strong><span>预测后续 PC，完成取指和译码。</span></li><li><strong>重命名</strong><span>分配物理寄存器及 ROB 项。</span></li><li><strong>调度</strong><span>向执行端口发射就绪操作。</span></li><li><strong>执行</strong><span>运行 ALU、向量与访存操作。</span></li><li><strong>提交</strong><span>按程序顺序提交或处理精确异常。</span></li></ol><p>缓存未命中可以与独立指令重叠，依赖指令仍须等待操作数。</p></figure><p>重命名消除 WAR 和 WAW 的假依赖，真正的 RAW 数据依赖仍在。重排序缓冲区跟踪完成状态并支持顺序提交。访存队列跟踪地址和顺序，加载可以从更早且地址匹配的存储获得转发数据。已提交的存储还可能暂留在缓冲区，之后才对其他核心可见。</p><p>许多现代 x86 核心把指令译成微操作。RISC-V 既有小型顺序核心，也有 BOOM 这样的乱序核心。预测器、队列容量和发射宽度都由实现决定。预测失败后处理器恢复架构路径，缓存和预测器仍可能留下微架构痕迹。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel64-and-ia32-architectures-optimization.html">Intel 优化参考手册 ↗</a></li><li><a href="https://docs.boom-core.org/en/latest/sections/intro-overview/boom.html">BOOM 核心文档 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="isa.zh.html">← 指令集</a><a href="cache.zh.html">缓存 →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

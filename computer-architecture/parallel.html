@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="Separate cache coherence, false sharing and cross-address memory ordering.">
+<title>Multicore · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="top"><div class="wrap"><a href="../index.html">← Personal home</a><nav class="lang" aria-label="Language"><a href="parallel.html" data-atlas-lang="en" aria-current="page">EN</a><a href="parallel.zh.html" data-atlas-lang="zh">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.html"><span aria-hidden="true">μ</span> Architecture Atlas</a>
+<nav class="site-nav" aria-label="Chapters"><a href="index.html">Overview</a><a href="isa.html">ISA</a><a href="cpu.html">CPU</a><a href="cache.html">Cache</a><a href="memory.html">Memory</a><a href="io.html">I/O</a><a href="parallel.html" aria-current="page">Multicore</a><a href="performance.html">Performance</a><a href="labs.html">Labs</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">COHERENCE / ORDERING</span><h1>When cores share memory</h1><p>Separate cache coherence, false sharing and cross-address memory ordering.</p><nav class="jumps" aria-label="On this page"><a href="#coherence">Coherence tracks ownership of one line</a><a href="#ordering">Ordering connects observations at different addresses</a></nav></div></div></section>
+<div class="wrap reading"><section id="coherence" class="chapter-section"><h2>Coherence tracks ownership of one line</h2><figure class="flow"><figcaption>Two cores increment independent counters in one line</figcaption><ol><li><strong>Core A writes</strong><span>Acquire write ownership of the line containing both counters.</span></li><li><strong>Core B writes</strong><span>Request ownership and invalidate or transfer A’s copy.</span></li><li><strong>Repeat</strong><span>The line moves again. Padding or separating hot counters can help.</span></li></ol><p>This is false sharing. Independent variables can still compete at cache-line granularity.</p></figure><p>A protocol such as MESI tracks states such as Modified, Exclusive, Shared and Invalid. Snooping and directories are ways to coordinate which agents have copies. Exact states and interconnects depend on the implementation. SIMD works across lanes within an instruction, SMT shares core resources between hardware threads, and multiple cores execute instruction streams with separate or shared caches.</p><ul class="sources" aria-label="Primary sources"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel64-and-ia32-architectures-optimization.html">Intel Optimization Reference Manual ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C ↗</a></li></ul></section><section id="ordering" class="chapter-section"><h2>Ordering connects observations at different addresses</h2><p>Coherence concerns one location. A memory consistency model constrains how reads and writes to different locations may be observed. In this hardware litmus test, x and y are initially zero and occupy distinct normal memory locations.</p><pre tabindex="0"><code>Core 0             Core 1
+x = 1              y = 1
+r0 = y             r1 = x
+
+Can (r0, r1) = (0, 0)?</code></pre><p>Yes under the usual x86 ordering rules for normal write-back memory, and under RVWMO without additional ordering. On x86 a store can wait in the local store buffer while a later load reads another address. An appropriate full store-to-load barrier on both cores rules out this outcome. RISC-V also provides FENCE and acquire/release semantics for supported atomic instructions, with RVWMO as the base model and Ztso as an optional extension.</p><p>For shared state in C or C++, use language atomics and synchronization. A release store and an acquire load that reads from it can publish prior data. Compiler ordering, ISA ordering and the rules for device memory each need their own treatment.</p><ul class="sources" aria-label="Primary sources"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://docs.riscv.org/reference/isa/unpriv/rvwmo.html">RVWMO memory model ↗</a></li><li><a href="https://riscv.org/specifications/ratified/">RISC-V ratified specifications ↗</a></li></ul></section><nav class="pager" aria-label="Adjacent chapters"><a href="io.html">← I/O</a><a href="performance.html">Performance →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.html">ShundaZhang · Personal home</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>

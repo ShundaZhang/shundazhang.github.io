@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#132739">
+<meta name="description" content="理解缓存一致性、伪共享以及跨地址的内存顺序。">
+<title>多核 · Architecture Atlas</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="../language.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">跳至正文</a>
+<div class="top"><div class="wrap"><a href="../index.zh.html">← 个人主页</a><nav class="lang" aria-label="语言"><a href="parallel.html" data-atlas-lang="en">EN</a><a href="parallel.zh.html" data-atlas-lang="zh" aria-current="page">中文</a></nav></div></div>
+<header class="wrap site-header"><a class="brand" href="index.zh.html"><span aria-hidden="true">μ</span> 计算机体系结构</a>
+<nav class="site-nav" aria-label="章节"><a href="index.zh.html">总览</a><a href="isa.zh.html">指令集</a><a href="cpu.zh.html">CPU 微架构</a><a href="cache.zh.html">缓存</a><a href="memory.zh.html">内存</a><a href="io.zh.html">I/O</a><a href="parallel.zh.html" aria-current="page">多核</a><a href="performance.zh.html">性能</a><a href="labs.zh.html">实验</a></nav></header>
+<main id="main"><section class="hero"><div class="wrap hero-inner"><div><span class="eyebrow">COHERENCE / ORDERING</span><h1>多个核心怎样共享内存</h1><p>理解缓存一致性、伪共享以及跨地址的内存顺序。</p><nav class="jumps" aria-label="本页目录"><a href="#coherence">一致性跟踪一条缓存行的所有权</a><a href="#ordering">内存顺序约束跨地址的观察结果</a></nav></div></div></section>
+<div class="wrap reading"><section id="coherence" class="chapter-section"><h2>一致性跟踪一条缓存行的所有权</h2><figure class="flow"><figcaption>两个核心修改同一行内的不同计数器</figcaption><ol><li><strong>核心 A 写入</strong><span>获得包含两个计数器的缓存行写权限。</span></li><li><strong>核心 B 写入</strong><span>请求写权限，使 A 的副本失效或发生转移。</span></li><li><strong>继续写入</strong><span>缓存行再次转移。填充或分开放置热点计数器可以缓解。</span></li></ol><p>这是伪共享。不同变量仍会在缓存行粒度上竞争。</p></figure><p>MESI 一类协议跟踪 Modified、Exclusive、Shared、Invalid 等状态。监听与目录是协调哪些节点持有副本的方式。具体状态和互连取决于实现。SIMD 在一条指令内处理多个 lane，SMT 让硬件线程共享核心资源，多核则使用各自或共享的缓存执行多条指令流。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel64-and-ia32-architectures-optimization.html">Intel 优化参考手册 ↗</a></li><li><a href="https://cs61c.org/">Berkeley CS61C 课程 ↗</a></li></ul></section><section id="ordering" class="chapter-section"><h2>内存顺序约束跨地址的观察结果</h2><p>一致性处理单一位置，内存一致性模型约束多个位置的读写可怎样被观察。下面的硬件 litmus test 中，x 和 y 初始为零，位于不同的普通内存位置。</p><pre tabindex="0"><code>Core 0             Core 1
+x = 1              y = 1
+r0 = y             r1 = x
+
+Can (r0, r1) = (0, 0)?</code></pre><p>在 x86 普通写回内存的顺序规则下可以出现，在没有额外排序的 RVWMO 下也可以。x86 存储可在本地存储缓冲区等待，后续加载可以读取其他地址。两边都插入适当的完整 store-to-load 屏障可排除此结果。RISC-V 还提供 FENCE 及受支持原子指令的 acquire/release 语义，默认模型为 RVWMO，Ztso 为可选扩展。</p><p>C 或 C++ 中的共享状态应通过语言原子操作及同步机制处理。release 存储与读取该值的 acquire 加载可以发布先前写入的数据。编译器顺序、ISA 顺序和设备内存规则分别处理。</p><ul class="sources" aria-label="一手资料"><li><a href="https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html">Intel SDM ↗</a></li><li><a href="https://docs.riscv.org/reference/isa/unpriv/rvwmo.html">RVWMO 内存模型 ↗</a></li><li><a href="https://riscv.org/specifications/ratified/">RISC-V 正式规范 ↗</a></li></ul></section><nav class="pager" aria-label="相邻章节"><a href="io.zh.html">← I/O</a><a href="performance.zh.html">性能 →</a></nav></div></main>
+<footer><div class="wrap"><a href="../index.zh.html">ShundaZhang · 个人主页</a><span>x86-64 / RISC-V</span></div></footer>
+</body>
+</html>
