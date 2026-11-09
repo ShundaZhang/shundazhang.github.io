@@ -1,5 +1,7 @@
 """AI workloads, heterogeneous processors and memory-system trade-offs."""
 
+from commons import commons_figure
+
 AI_SOURCES = {
     'cuda-simt': ('https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/writing-cuda-kernels.html', 'NVIDIA CUDA · SIMT and memory access', 'NVIDIA CUDA · SIMT 与内存访问'),
     'amx': ('https://www.intel.com/content/www/us/en/developer/articles/technical/tuning-guide-for-ai-on-the-4th-generation.html', 'Intel · AMX and CPU tuning', 'Intel · AMX 与 CPU 调优'),
@@ -36,6 +38,11 @@ def ai_chapter(t, p, code, rows, picture, exercise, refs):
              [('Latency handling','隐藏延迟'),('Out-of-order scheduling, branch prediction and caches exploit work within a thread.','用乱序调度、分支预测和缓存挖掘线程内部的并行。'),('A scheduler can issue another ready warp while one waits. Diverging branches can lower lane utilization.','一组 warp 等待时可发射其他就绪 warp，分支分歧会降低 lane 利用率。')],
              [('Data reuse','数据复用'),('Hardware caches and vector or matrix instructions help reuse nearby data.','通过硬件缓存和向量、矩阵指令复用附近数据。'),('A kernel arranges nearby accesses, tiles data and can reuse it in registers or on-chip shared memory.','kernel 组织相邻访存并做分块，可在寄存器或片上共享内存中复用。')],
          ])
+         +commons_figure(t,'cpu-gpu',
+             ('CPU and GPU spend chip resources differently','CPU 和 GPU 的芯片资源分配'),
+             ('A conceptual CPU devotes more area to control and cache, while a conceptual GPU shows more arithmetic lanes.','概念图中，CPU 给控制和缓存更多空间，GPU 画出更多算术执行单元。'),
+             ('Read this early NVIDIA illustration as a qualitative comparison of control, cache and arithmetic resources. The rectangles are conceptual and their proportions do not specify a contemporary chip.',
+              '这张 NVIDIA 早期示意图用于比较控制、缓存和算术资源的分配思路。方块面积是概念示意，具体芯片须查产品架构。'))
          +picture(('Why tiling helps matrix work','为什么矩阵运算要分块'),[
              (('Bring in a tile','载入分块'),('Load a block of operands from GPU memory.','从 GPU 内存载入一块操作数。')),
              (('Reuse on chip','片上复用'),('Hold it in shared memory or registers across many multiply-adds.','留在共享内存或寄存器，在多次乘加中复用。')),
@@ -69,6 +76,22 @@ def ai_chapter(t, p, code, rows, picture, exercise, refs):
              [('Coherent CPU–GPU memory','CPU–GPU 一致性内存'),('AMD MI300A combines x86 Zen 4 cores and a CDNA 3 GPU with a coherent 128 GB HBM3 pool.','AMD MI300A 把 x86 Zen 4 核心与 CDNA 3 GPU 放入同一封装，共享一致的 128 GB HBM3。'),('Suitable buffers can be accessed from both sides with fewer explicit copies. Locality, cache coherence and synchronization still affect the cost.','合适的缓冲区可由双方访问，减少显式拷贝。局部性、一致性与同步仍影响成本。')],
              [('Host expansion or pooling','主机扩容或池化'),('CXL Type 3 memory devices expand host-addressable memory. Later CXL fabrics support forms of pooling with suitable switches and management.','CXL Type 3 内存设备扩展主机可寻址内存，后续 CXL 互连可配合交换机与管理软件实现一定形式的池化。'),('A larger or shareable capacity tier helps placement. Access latency and bandwidth depend on the link and topology.','更大或可共享的容量层便于做数据放置，但延迟与带宽取决于链路和拓扑。')],
          ])
+         +commons_figure(t,'hbm',
+             ('Where HBM sits relative to the GPU','HBM 堆栈怎样与 GPU 相连'),
+             ('Stacked DRAM dies connect vertically by through-silicon vias. The silicon interposer routes a wide interface to the GPU.','多层 DRAM 裸片通过硅通孔纵向连接，硅中介层把宽接口连到 GPU。'),
+             ('Follow the links from the GPU die across the silicon interposer to the HBM stacks. The link count and frequency shown are for an early HBM example. The package structure explains how a wide interface can place substantial bandwidth near compute.',
+              '从 GPU 裸片沿硅中介层追到 HBM 堆栈。图中的链路数量和频率来自早期 HBM 示例，封装结构展示了如何用宽接口在计算附近提供高带宽。'))
+         +commons_figure(t,'unified-system-memory',
+             ('A CPU and GPU sharing system memory','CPU 与 GPU 共用系统内存'),
+             ('A CPU and an integrated GPU access shared system memory through a common memory controller. Address translation is shown on both sides.','CPU 和集成 GPU 经同一个内存控制器访问系统内存，两边都画出了地址翻译。'),
+             ('Follow both processor paths to the same system-memory box. The original is an older HSA/DDR3 example. Its shared physical backing illustrates one design for unified memory, while MI300A uses a different implementation with shared HBM.',
+              '沿两条处理器路径看它们如何汇入同一个系统内存方框。原图是较早的 HSA／DDR3 示例，用于理解共享物理内存这一种统一内存方案。MI300A 则用另一套实现共享 HBM。'))
+         +picture(('The extra path introduced by CXL memory','CXL 扩容增加了一条访存路径'),[
+             (('CPU load','CPU 加载'),('The host maps an address range to memory behind a CXL device.','主机把一段地址映射到 CXL 设备后的内存。')),
+             (('Host bridge and link','主桥与链路'),('A request to that range traverses the root port and, when present, a switch.','访问该区间的请求经过根端口，有交换机时再经过交换机。')),
+             (('Type 3 memory device','Type 3 内存设备'),('The expander’s controller accesses its attached memory and returns the data.','扩展设备的控制器访问其内存并返回数据。')),
+         ],('On a typical host, local DRAM has its own path through the on-chip memory controller. The illustrated CXL route adds a separate capacity tier.',
+             '典型主机的本地 DRAM 走片上内存控制器。图中的 CXL 路径提供另一层容量。'))
          +p(t('A unified virtual address space, shared physical backing, hardware cache coherence and runtime-managed page migration are distinct properties. A platform can provide some of them without the rest. CXL 4.0 is a published specification. Actual feature support depends on the host, device, switch, firmware and OS.',
               '统一虚拟地址空间、共享物理内存、硬件缓存一致性和运行时页迁移是不同属性，平台可以只提供其中一部分。CXL 4.0 是已发布规范，实际支持范围由主机、设备、交换机、固件和 OS 共同决定。'))
          +p(t('The 2026 Vera host CPU is a concrete example of how this changes CPU design. NVIDIA pairs CPU-side LPDDR5X with GPU-side HBM4 and a coherent CPU–GPU link. The host runs runtimes, data movement and orchestration while the GPU handles tensor-heavy work. Those are architectural choices about where to place bandwidth, latency and coherence.',

@@ -1,6 +1,7 @@
 """Bilingual chapter content and primary references."""
 
 from ai import AI_SOURCES, ai_chapter
+from commons import commons_figure
 from diagrams import address_spaces, cache_schematics, sv39_fields
 
 SOURCES = {
@@ -111,6 +112,18 @@ def chapters(t, p, code, table, flow, link, refs):
          +p(t('Cold misses happen on first touch, capacity misses occur when the working set exceeds available capacity, and conflict misses occur when too many active lines map to one set. In multicore systems, invalidation can cause additional coherence misses. Increasing ways can reduce conflicts while changing lookup cost.',
               '冷未命中来自首次访问，容量未命中来自工作集超出容量，冲突未命中来自过多活跃行落到同一组。多核系统还可能因一致性失效而重新取数。增加路数可减轻冲突，同时也会改变查找成本。'))
          +cache_schematics(t)
+         +'<div class="wiki-pair">'
+         +commons_figure(t,'cache-direct',
+             ('Direct mapping, one way per set','直接映射，每组只有一路'),
+             ('Address fields select one cache entry. A comparator checks its tag and valid bit.','地址字段选择一个条目，比较器检查 tag 和有效位。'),
+             ('Follow Index to a row, then compare Tag. This is the one-way version of the preceding four-way example.',
+              '沿原图的 Index 选中一行，再检查 Tag。这相当于上面四路算例的单路版本。'))
+         +commons_figure(t,'cache-four-way',
+             ('Four-way lookup in hardware','四路组相联的硬件查找'),
+             ('The same index selects a row in four ways. Comparators and a selector choose the matching data.','同一索引在四路中各选择一行，由比较器和选择器选出匹配数据。'),
+             ('The Japanese labels エントリアドレス, フレームアドレス and ワードアドレス denote the index, tag-side address bits, and word offset in this drawing. Compare its four comparators with the single comparator at left.',
+              '原图日文「エントリアドレス」对应组索引，「フレームアドレス」对应 tag 所用的高位，「ワードアドレス」对应行内字偏移。对照直接映射图中的单个比较器，这里有四路并行比较。'))
+         +'</div>'
          +exercise('labs',('Try the cache mapper →','打开缓存映射实验 →'),('Enter 0x3234 and change ways from 4 to 1. Explain why the same address now uses a different set and tag.','输入 0x3234，再把路数从 4 改到 1，解释为何同一地址会选中不同的组索引与 tag。'),'#cache-mapping')),
         ('policies',t('Follow a miss and a dirty eviction','跟踪未命中与脏行逐出'),
          picture(('A read miss in a write-back cache','写回缓存中的一次读未命中'),[
@@ -140,6 +153,11 @@ def chapters(t, p, code, table, flow, link, refs):
              '这些是区域类型，具体地址布局由 ASLR、加载器和操作系统决定。'))
          +p(t('On Linux, a VMA describes a contiguous virtual range and its policy, including permissions and backing. A page-table entry describes one active hardware mapping or the state used to resolve it. One VMA can contain many pages, some not yet resident. Contiguous virtual pages can map to noncontiguous physical frames. Two address spaces can also map the same frame at different virtual addresses.',
              'Linux 的 VMA 描述一段连续虚拟地址及其策略，包括权限和后备对象。页表项描述单个硬件映射，或保留供后续解析的状态。一段 VMA 可含许多页，其中一部分尚未驻留。连续虚拟页可以映射到离散物理页，两个地址空间也能用不同虚拟地址映射同一物理页。'))
+         +commons_figure(t,'virtual-physical',
+             ('Virtual pages and physical frames','虚拟页与物理页框'),
+             ('Arrows map text, data and stack pages in one process to scattered frames in physical memory.','箭头将进程的代码、数据和栈页映射到分散的物理页框。'),
+             ('Read from left to right. Each arrow connects one virtual page to its backing frame. The addresses illustrate an example layout.',
+              '从左向右看，每条箭头把一个虚拟页连到它的后备页框。图中的地址只代表一种示例布局。'))
          +refs(('linux-vma','linux-pte'))),
         ('translation',t('From virtual address to physical address','从虚拟地址到物理地址'),
          picture(('Load address translation','一次加载的地址翻译'),[
@@ -173,6 +191,11 @@ def chapters(t, p, code, table, flow, link, refs):
              [('Leaf or pointer','叶项或下一级指针'),('PT entries map 4 KiB pages. The PS bit at supported levels selects a larger leaf.','末级表项映射 4 KiB 页，支持大页的层级可用 PS 位选择大页叶项。'),('A valid PTE with R=W=X=0 points to the next table. A valid readable or executable entry can be a leaf.','有效项的 R=W=X=0 时指向下一级。合法的可读或可执行项可作为叶项。')],
              [('Usage tracking','访问状态'),('Accessed and Dirty bits record usage as specified.','Accessed 和 Dirty 位按架构规则记录使用状态。'),('A and D bits track accesses and writes. Update or fault behavior depends on the implemented mode.','A、D 记录访问与写入，更新或触发故障取决于实现模式。')],
          ])
+         +commons_figure(t,'page-tables-five-levels',
+             ('Compare with x86-64 five-level paging','对照 x86-64 五级分页'),
+             ('CR3 selects the top table. Address indices lead through five levels to a physical page, then the low bits select a byte.','CR3 选出顶级表，地址索引穿过五级到达物理页，最后由低位选中字节。'),
+             ('This LA57 illustration follows a 4 KiB leaf. Each table has 512 entries and each index consumes nine bits. Compare five table indices here with the three in Sv39 above. The high field marked Reserved represents bits 63–57 here. A canonical LA57 address copies bit 56 into all seven of those bits.',
+              '这张 LA57 图沿着 4 KiB 叶项翻译。每张表有 512 个条目，每级消耗 9 位索引。和上面的 Sv39 对照，五级分页用五段索引。图中标为 Reserved 的是第 63–57 位，规范的 LA57 地址要求这七位都等于第 56 位。'))
          +refs(('intel','rvpriv','linux-pte'))),
         ('management',t('What the OS does when a mapping changes','映射变化时操作系统做什么'),
          picture(('Demand paging after a new anonymous mapping','建立匿名映射后的按需分配'),[
@@ -197,6 +220,11 @@ def chapters(t, p, code, table, flow, link, refs):
              'DRAM 控制器把地址分到通道、rank、bank 与行。激活行会把它读入行缓冲，访问已打开的行通常比换行成本低。多个 bank 和通道可重叠工作。刷新、控制器队列以及读写方向切换都会影响负载下的延迟。'),
            t('Latency is the time for one request. Bandwidth measures sustained data transfer and benefits from parallel requests. On a NUMA machine, placement determines which memory controller serves a page, and a remote node adds fabric traffic. Measure placement and access pattern along with throughput.',
              '延迟是一次请求花费的时间，带宽是持续的数据传输能力，可受益于多个并行请求。NUMA 机器的页放置决定由哪个内存控制器服务，访问远端节点会增加互连流量。测吞吐时也要记录放置位置与访存模式。'))
+         +commons_figure(t,'numa',
+             ('Local memory and remote memory in NUMA','NUMA 的本地内存和远端内存'),
+             ('Each node has processors and local memory. A fabric connects nodes to one another.','每个节点都有处理器和本地内存，互连把各节点连接起来。'),
+             ('Compare a CPU accessing the Memory box on its own node with an access that crosses the network to another node. A larger system can have more capacity without uniform access costs.',
+              '比较 CPU 访问同节点的 Memory 方框，与跨互连访问另一节点内存的路径。系统容量增加时，各位置的访问代价仍可能不同。'))
          +refs(('intel-opt','cs61c'))),
     ]
 
