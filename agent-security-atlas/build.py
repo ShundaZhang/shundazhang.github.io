@@ -91,6 +91,42 @@ def build(zh):
         ('https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html', 'OWASP AI Agent Security'),
     ))
 
+    adoption = '<div class="adoption" id="tee-adoption"><h3>' + t(
+        'How widely are TEEs used?', 'TEE 的采用有多广？',
+    ) + '</h3>' + paragraph(
+        'Confidential computing is already used in commercial AI, but it was less common than network and access isolation, containers in VMs, and microVM sandboxes in the Linux Foundation’s November 2026 survey.',
+        '机密计算已经用于商用 AI。Linux Foundation 2026 年 11 月发布的调查显示，其采用范围仍小于网络与访问隔离、VM 内的容器和 microVM 沙箱。',
+    ) + table(
+        [('AI workload isolation', 'AI 工作负载的隔离措施'), ('In use', '已使用'), ('Planned', '计划使用')],
+        [
+            [('Network and access isolation', '网络与访问隔离'), ('57%', '57%'), ('55%', '55%')],
+            [('Containers inside VMs', '在 VM 内运行容器'), ('40%', '40%'), ('41%', '41%')],
+            [('Hardware-level VM isolation', '硬件级 VM 隔离'), ('35%', '35%'), ('31%', '31%')],
+            [('Namespace containers on bare metal', '裸机上的 Namespace 容器隔离'), ('33%', '33%'), ('34%', '34%')],
+            [('MicroVM sandboxing', 'MicroVM 沙箱'), ('20%', '20%'), ('30%', '30%')],
+            [('Confidential computing', '机密计算（TEE 类方案）'),
+             ('<strong>12%</strong>', '<strong>12%</strong>'), ('<strong>26%</strong>', '<strong>26%</strong>')],
+        ],
+    ) + paragraph(
+        'The survey covers organizations’ AI workloads, including workloads beyond agents. Respondents could select multiple measures. After excluding “don’t know” responses, 435 answered the current-use question and 381 answered the planning question. The 26% reflects intent for the following year. The 12% describes this sample, while the global share of agent deployments using a TEE remains unknown.',
+        '调查覆盖组织的 AI 工作负载，范围比 Agent 更广。答卷者可以多选。排除“不确定”后，已使用题有 435 份有效答卷，计划使用题有 381 份。26% 反映未来一年的使用意向，12% 是该样本中报告已经使用的比例。全球 Agent 部署的 TEE 采用率仍未知。',
+    ) + refs((
+        'https://www.cncf.io/wp-content/uploads/2026/11/Virtual-Machines_Report_2026.pdf#page=11',
+        t('Linux Foundation survey · Figure 5', 'Linux Foundation 调查 · 图 5'),
+    )) + paragraph(
+        'In a separate Agent security survey by NeuralTrust, 164 respondents reported activity monitoring (42%), role-based access control (38%), data loss prevention (31%), and prompt-injection filtering (27%). These figures describe a different sample and question.',
+        'NeuralTrust 另一项针对 Agent 安全的调查中，164 名答卷者报告的措施包括活动监控（42%）、基于角色的访问控制（38%）、数据防泄漏（31%）和提示注入过滤（27%）。这组结果来自不同的样本与题目。',
+    ) + refs((
+        'https://a.storyblok.com/f/322249/x/8af0a54178/the-state-of-ai-agent-security-2026.pdf#page=16',
+        t('NeuralTrust Agent security survey · Q9', 'NeuralTrust Agent 安全调查 · 第 9 题'),
+    )) + paragraph(
+        'Tool permissions, approvals and egress checks govern what an agent can do. If a webpage persuades a TDX-protected agent to send customer data to an unapproved destination, the egress policy must still block that request. A TEE addresses a separate threat: privileged infrastructure reading plaintext or keys in use. Remote attestation can make data and key delivery conditional on a verified workload, which is why confidential inference, sensitive data processing and key custody are useful early applications.',
+        '工具权限、审批与出口策略控制 Agent 能做什么。即使 Agent 跑在 TDX 中，恶意网页诱导它向未经授权的地址发送客户数据时，仍需出口策略拦截请求。TEE 的额外用途是约束有特权的基础设施读取正在处理的明文或密钥，并通过远程证明把数据与密钥交付绑定到通过验证的工作负载。因此，机密推理、敏感数据处理和密钥托管是典型应用。',
+    ) + refs(
+        ('https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html', 'OWASP AI Agent Security'),
+        ('https://security.apple.com/blog/expanding-pcc', 'Apple PCC'),
+    ) + '</div>'
+
     isolation = section(1, (
         'Start by deciding which code runs, who can supply it, and whose secrets and state it could reach.',
         '先确定运行什么代码、谁能提供代码，以及代码可能接触哪些租户的秘密和运行状态。',
@@ -112,7 +148,7 @@ def build(zh):
         ('https://github.com/kata-containers/kata-containers', 'Kata Containers'),
         ('https://docs.wasmtime.dev/security.html', 'Wasmtime / WASI'),
         ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
-    ))
+    ) + adoption)
 
     permissions = section(2, (
         'Have the harness send proposed actions to a broker that checks the current user, agent, destination, operation and data class.',
@@ -255,7 +291,9 @@ def build(zh):
     tee_cases += paragraph(
         'The AgentCore Firecracker, Vercel microVM and GKE gVisor examples below document execution isolation. Verify TEE coverage separately from their sandbox descriptions. For an attested deployment, check hardware endorsements, accepted measurements and TCB status, freshness, and the binding to the TLS or key-release public key. Tool authorization and egress controls still govern what measured code can send.',
         '下方的 AgentCore Firecracker、Vercel microVM 和 GKE gVisor 是公开文档中的执行隔离做法。TEE 覆盖范围需要单独核对。验证部署时，应检查硬件背书、允许的度量和 TCB 状态、证明新鲜度，以及证据是否绑定 TLS 或密钥发放的公钥。经度量的代码仍需工具授权和出口控制。',
-    ) + '</div>'
+    ) + '<p><a href="#tee-adoption">' + t(
+        'See how TEE adoption compares with other controls', '查看 TEE 与其他防护措施的采用率对照',
+    ) + ' ↑</a></p></div>'
 
     products = section(4, (
         'The controls below come from public product documentation reviewed on 15 November 2026. Hosted features and availability depend on compute mode, region, plan and release.',

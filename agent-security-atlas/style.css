@@ -123,3 +123,16 @@ footer { display: flex; align-items: center; justify-content: space-between; pad
 .tee-cases h3 { font-size: 1.45rem; margin-block-end: .65rem; }
 .tee-cases tbody td:last-child { width: 54%; }
 .tee-cases tbody td:nth-child(2) { width: 27%; }
+
+.adoption { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 24px; }
+.adoption h3 { font-size: 1.45rem; margin-bottom: .65rem; }
+.adoption .refs { margin: 0 0 1.25rem; }
+.adoption table { min-width: 0; }
+.adoption tbody th { width: auto; }
+.adoption td { width: 20%; }
+.adoption :is(th, td):not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.adoption tbody tr:last-child { background: var(--panel); }
+.adoption td strong { color: var(--accent); }
+@media (max-width: 590px) {
+  .adoption :is(th, td) { padding: .65rem .5rem; }
+}
