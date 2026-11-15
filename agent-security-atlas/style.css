@@ -118,3 +118,8 @@ footer { display: flex; align-items: center; justify-content: space-between; pad
 }
 .recent { border-left: 2px solid var(--accent); padding-inline-start: 18px; margin-block-start: 24px; }
 .recent .explain { margin-block: 12px; }
+
+.tee-cases { margin-block-end: 32px; }
+.tee-cases h3 { font-size: 1.45rem; margin-block-end: .65rem; }
+.tee-cases tbody td:last-child { width: 54%; }
+.tee-cases tbody td:nth-child(2) { width: 27%; }

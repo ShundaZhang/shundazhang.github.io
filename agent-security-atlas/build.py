@@ -106,7 +106,7 @@ def build(zh):
     ) + paragraph(
         'Use a separate boundary for each mutually untrusted tenant or job. Bind the session ID to an authenticated owner, make base images read-only, give the job a writable scratch layer, then revoke credentials and destroy it. A warm pool should assign clean instances. For hibernation, protect snapshots like live memory and scope the restore operation to the same tenant and policy version.',
         '按相互不信任的租户或任务划分边界。将会话 ID 绑定认证主体，用只读基础镜像和独立可写层运行任务，结束后撤销凭据并销毁实例。预热池应只分配干净实例。休眠快照应按运行内存的敏感度保护，恢复操作须检查租户和策略版本。',
-    ) + refs(
+    ) + '<p><a href="#tee-products">' + t('See products using TEEs', '查看采用 TEE 的产品') + ' ↓</a></p>' + refs(
         ('https://gvisor.dev/docs/architecture_guide/intro/', 'gVisor security'),
         ('https://github.com/firecracker-microvm/firecracker/blob/main/docs/prod-host-setup.md', 'Firecracker Jailer'),
         ('https://github.com/kata-containers/kata-containers', 'Kata Containers'),
@@ -180,10 +180,87 @@ def build(zh):
         ('https://cloud.google.com/blog/topics/ai-infrastructure/introducing-agent-compute-engine-and-expanded-agent-governance/', 'Google Cloud announcement'),
         ('https://genai.owasp.org/2026/09/01/owasp-genai-security-project-unveils-2026-top-10-for-llm-applications-new-agent-control-standard-and-sponsors-as-community-tops-30000-members/', 'OWASP announcement'),
     ) + '</div>'
+
+    def implementation(en, cn, *links):
+        references = ' · '.join(source(url, t(*label)) for url, label in links)
+        return en + '<br>' + references, cn + '<br>' + references
+
+    tee_cases = '<div class="tee-cases" id="tee-products"><h3>' + t(
+        'Where commercial products use TEEs', '哪些商用产品用了 TEE',
+    ) + '</h3>' + paragraph(
+        'Code sandboxes protect the host from agent-generated code. Confidential computing adds a different protection: it limits what privileged infrastructure can see of the workload’s data while it is running. Check which component is protected and whether the evidence is bound to the endpoint receiving plaintext.',
+        '代码沙箱保护宿主免受 Agent 生成代码的影响。机密计算还提供另一方向的保护，限制具有基础设施特权的一方在运行期间能看到的工作负载数据。选型时要查清哪个组件受保护，以及证明是否绑定到接收明文的端点。',
+    ) + table(
+        [('Product', '产品'), ('Scope and maturity', '保护范围与状态'), ('Published implementation', '公开实现')],
+        [
+            [
+                ('Apple Intelligence · PCC', 'Apple Intelligence · PCC'),
+                ('Selected cloud inference workflows in Apple Intelligence.', 'Apple Intelligence 的特定云端推理任务。'),
+                implementation(
+                    'Apple silicon PCC nodes use Secure Enclave and Secure Boot as roots of trust. The device verifies node credentials and encrypts to the verified nodes. The June 2026 Google Cloud expansion uses Intel TDX, NVIDIA Confidential Computing and Titan. Apple documents separate confidential VMs for attested keys.',
+                    'Apple silicon PCC 节点以 Secure Enclave 和 Secure Boot 为信任基础。设备验证节点凭据，再把请求加密给已验证的节点。2026 年 6 月公布的 Google Cloud 扩展采用 Intel TDX、NVIDIA Confidential Computing 和 Titan，并用独立机密 VM 保存经过证明的密钥。',
+                    ('https://security.apple.com/blog/private-cloud-compute/', ('Apple PCC', 'Apple PCC')),
+                    ('https://security.apple.com/blog/expanding-pcc', ('Google Cloud expansion', 'Google Cloud 扩展')),
+                ),
+            ],
+            [
+                ('Google Private AI Compute', 'Google Private AI Compute'),
+                ('Selected Pixel features such as Magic Cue and Recorder summaries. This is Google’s own serving system.', 'Pixel 的部分功能，例如 Magic Cue 与 Recorder 摘要。这里指 Google 自己的推理服务。'),
+                implementation(
+                    'Google documents an AMD-based CPU TEE and a hardened Cloud TPU path based on Titanium Intelligence Enclave. Trusted nodes attest peers and encrypt traffic across the inference pipeline.',
+                    'Google 文档说明 CPU 侧采用基于 AMD 的 TEE，TPU 侧采用基于 Titanium Intelligence Enclave 的加固链路。可信节点相互证明并加密传输推理数据。',
+                    ('https://blog.google/innovation-and-ai/products/google-private-ai-compute/', ('Pixel features', 'Pixel 功能')),
+                    ('https://services.google.com/fh/files/misc/private_ai_compute_technical_brief.pdf', ('Technical brief', '技术简报')),
+                ),
+            ],
+            [
+                ('OpenAI Private Inference', 'OpenAI Private Inference'),
+                ('API preview for eligible inference workflows.', '面向符合条件的推理工作流，处于 API 预览。'),
+                implementation(
+                    'OpenAI describes confidential computing for prompts and responses during model processing. Its public overview leaves CPU/GPU details and client attestation unspecified. The scope described is inference.',
+                    'OpenAI 公开说明用机密计算保护模型处理中的提示和响应。公开概述未列出 CPU / GPU 和客户端证明细节，所述范围是推理链路。',
+                    ('https://openai.com/business/private-intelligence/', ('Private Intelligence', 'Private Intelligence')),
+                ),
+            ],
+            [
+                ('Phala Cloud / dstack', 'Phala Cloud / dstack'),
+                ('Deployable platform for confidential Agent applications.', '可部署机密 Agent 应用的平台。'),
+                implementation(
+                    'Run the Agent workload in a measured TDX confidential VM. dstack can release application keys after attestation. Any remote model API or SaaS that receives plaintext sits in its own trust domain.',
+                    '将 Agent 应用放入受度量的 TDX 机密 VM，dstack 可在证明通过后发放应用密钥。收到明文的远端模型 API 或 SaaS 处于各自的信任域。',
+                    ('https://github.com/dstack-TEE/dstack', ('dstack', 'dstack')),
+                    ('https://phala.com/solutions/ai-agents', ('Agent deployment', 'Agent 部署')),
+                ),
+            ],
+            [
+                ('Agents on NEAR Intents', 'Agents on NEAR Intents'),
+                ('An Agent API with a documented, publicly verifiable TEE endpoint.', '提供公开验证端点的 Agent API。'),
+                implementation(
+                    'The API, database and TLS termination run inside an Intel TDX VM. Its attestation endpoint binds the client nonce and the API TLS key to the quote. The application documents its separate wallet and policy boundary.',
+                    'API、数据库和 TLS 终止都在 Intel TDX VM 内。证明端点把客户端 nonce 和 API TLS 密钥绑定到 Quote。钱包及授权策略有独立的边界。',
+                    ('https://docs.agentsonintents.com/integration/agent-api/tee', ('Verify the TDX quote', '验证 TDX Quote')),
+                ),
+            ],
+            [
+                ('Microsoft Azure Confidential AI', 'Microsoft Azure Confidential AI'),
+                ('Infrastructure for customer-deployed confidential AI.', '供客户部署机密 AI 的基础设施。'),
+                implementation(
+                    'Azure documents SEV-SNP or TDX confidential VMs, confidential containers and NVIDIA confidential GPUs. Verify what the selected workload actually puts inside its TEE, including where TLS terminates.',
+                    'Azure 提供 SEV-SNP 或 TDX 机密 VM、机密容器和 NVIDIA 机密 GPU。需要核对所选部署实际将哪些组件放进 TEE，以及 TLS 在哪里终止。',
+                    ('https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-ai', ('Azure Confidential AI', 'Azure Confidential AI')),
+                ),
+            ],
+        ],
+    )
+    tee_cases += paragraph(
+        'The AgentCore Firecracker, Vercel microVM and GKE gVisor examples below document execution isolation. Verify TEE coverage separately from their sandbox descriptions. For an attested deployment, check hardware endorsements, accepted measurements and TCB status, freshness, and the binding to the TLS or key-release public key. Tool authorization and egress controls still govern what measured code can send.',
+        '下方的 AgentCore Firecracker、Vercel microVM 和 GKE gVisor 是公开文档中的执行隔离做法。TEE 覆盖范围需要单独核对。验证部署时，应检查硬件背书、允许的度量和 TCB 状态、证明新鲜度，以及证据是否绑定 TLS 或密钥发放的公钥。经度量的代码仍需工具授权和出口控制。',
+    ) + '</div>'
+
     products = section(4, (
         'The controls below come from public product documentation reviewed on 15 November 2026. Hosted features and availability depend on compute mode, region, plan and release.',
         '以下依据截至 2026 年 11 月 15 日查阅的公开产品文档。功能可用性取决于计算模式、区域、套餐和版本。',
-    ), '<div class="product-grid">' + ''.join([
+    ), tee_cases + '<div class="product-grid">' + ''.join([
         product('Amazon Bedrock AgentCore', (
             'Serverless Runtime microVMs isolate CPU, memory and filesystem per session. Gateway Policy can evaluate Cedar rules for tool calls. Use IAM or JWT authentication and bind session IDs to the invoking tenant.',
             'Serverless Runtime microVM 按会话隔离 CPU、内存和文件系统。Gateway Policy 可用 Cedar 策略判断工具调用。使用 IAM 或 JWT 认证，并将会话 ID 绑定到调用租户。',
