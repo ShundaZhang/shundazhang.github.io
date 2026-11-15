@@ -27,6 +27,8 @@ The homepage groups independent entries into four categories:
 - [Penetration Testing Atlas](https://shundazhang.github.io/penetration-testing/)
 - [OSINT & GEO Atlas](https://shundazhang.github.io/osint-atlas/)
 
+- [AI Agent Security](https://shundazhang.github.io/agent-security-atlas/)
+
 ### New technologies
 
 - [AI & Agent Atlas](https://shundazhang.github.io/ai-agent-atlas/)
