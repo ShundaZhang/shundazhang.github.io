@@ -2,6 +2,14 @@
 from html import escape
 from pathlib import Path
 
+from figures import (
+    attestation_exchange,
+    context_flow,
+    deployment_architecture,
+    sandbox_lifecycle,
+    tool_exchange,
+)
+
 ROOT = Path(__file__).resolve().parent
 
 
@@ -71,6 +79,7 @@ def build(zh):
           <li><span>03</span><div><strong>{t('Policy broker', '授权网关')}</strong><small>{t('Identity · scope · approval · audit', '身份 · 权限范围 · 审批 · 审计')}</small></div></li>
           <li><span>04</span><div><strong>{t('Isolated execution', '隔离执行')}</strong><small>{t('Sandbox · egress proxy · scoped tools', '沙箱 · 出口代理 · 受限工具')}</small></div></li>
         </ol>
+        <a class="drawing-link" href="#agent-system-diagram">{t('See the full architecture', '查看完整架构图')} ↓</a>
       </figure>
     </section>'''
 
@@ -201,7 +210,7 @@ def build(zh):
     tee_cases += paragraph(
         'The AgentCore Firecracker, Vercel microVM and GKE gVisor examples in Product Practices document execution isolation. Verify TEE coverage separately from their sandbox descriptions. For an attested deployment, check hardware endorsements, accepted measurements and TCB status, freshness, and the binding to the TLS or key-release public key. Tool authorization and egress controls still govern what measured code can send.',
         '「产品做法」里的 AgentCore Firecracker、Vercel microVM 和 GKE gVisor 是公开文档中的执行隔离做法。TEE 覆盖范围需要单独核对。验证部署时，应检查硬件背书、允许的度量和 TCB 状态、证明新鲜度，以及证据是否绑定 TLS 或密钥发放的公钥。经度量的代码仍需工具授权和出口控制。',
-    ) + '<p><a href="#tee-adoption">' + t(
+    ) + attestation_exchange(zh) + '<p><a href="#tee-adoption">' + t(
         'See how TEE adoption compares with other controls', '查看 TEE 与其他防护措施的采用率对照',
     ) + ' ↓</a></p></div>'
 
@@ -217,7 +226,7 @@ def build(zh):
             [('V8 isolate / WASM', 'V8 Isolate / WASM'), ('A language runtime confines supported code to a memory and API boundary. Expose typed functions or capability-scoped WASI handles for short jobs.', '语言运行时用内存和 API 边界限制所支持的代码，适合短任务，可只开放类型化函数或受限的 WASI 句柄。'), ('Constrain host imports, preopened directories, outbound fetch, execution budgets and runtime versions. Confirm which boundaries the provider adds.', '检查宿主 imports、预开放目录、网络 fetch、执行预算与运行时版本，确认厂商叠加的隔离边界。')],
             [('Confidential VM / TEE', '机密 VM / TEE'), ('TDX and SEV-SNP protect private guest state against parts of the host threat model. Attestation can gate key delivery to a measured workload.', 'TDX 和 SEV-SNP 在其威胁模型内保护 Guest 私有状态。远程证明可用于向符合度量策略的工作负载发放密钥。'), ('Verify the full CPU/GPU trust path if required. Apply tool policy, constrain shared I/O, and model any provider receiving plaintext.', '按需验证 CPU / GPU 证明链，继续限制工具权限与共享 I/O，并明确哪些服务仍接触明文。')],
         ],
-    ) + tee_cases + adoption + paragraph(
+    ) + tee_cases + adoption + sandbox_lifecycle(zh) + paragraph(
         'Use a separate boundary for each mutually untrusted tenant or job. Bind the session ID to an authenticated owner, make base images read-only, give the job a writable scratch layer, then revoke credentials and destroy it. A warm pool should assign clean instances. For hibernation, protect snapshots like live memory and scope the restore operation to the same tenant and policy version.',
         '按相互不信任的租户或任务划分边界。将会话 ID 绑定认证主体，用只读基础镜像和独立可写层运行任务，结束后撤销凭据并销毁实例。预热池应只分配干净实例。休眠快照应按运行内存的敏感度保护，恢复操作须检查租户和策略版本。',
     ) + refs(
@@ -231,17 +240,7 @@ def build(zh):
     permissions = section(2, (
         'Have the harness send proposed actions to a broker that checks the current user, agent, destination, operation and data class.',
         'Harness 把拟执行的动作交给网关，由网关检查当前用户、Agent、目标、操作和数据类别。',
-    ), diagram(
-        ('One write request', '一次写操作'),
-        [
-            (('Propose', '提出'), ('Typed tool + arguments', '类型化工具与参数')),
-            (('Authorize', '授权'), ('Tenant, resource, operation', '租户、资源和操作')),
-            (('Approve', '审批'), ('Bind approval to the exact action', '绑定到这一次具体动作')),
-            (('Execute', '执行'), ('Scoped token → destination', '限权令牌 → 目标服务')),
-            (('Record', '记录'), ('Decision and redacted results', '决策和脱敏后的结果')),
-        ],
-        ('Make the broker the only route to privileged services. Shell, browser, MCP and callbacks can otherwise create alternate paths.', '让网关成为访问高权限服务的唯一路径，同时约束 Shell、浏览器、MCP 和回调等替代路径。'),
-    ) + list_items([
+    ), tool_exchange(zh) + list_items([
         (('Capabilities.', '最小权限。'), ('Resolve targets server-side. Authorize reads and writes separately, including object ownership and tenant. For a write or export, bind the approval to the normalized destination, parameters, user, expiry and an idempotency key.', '在服务端解析资源，对读写分别授权，并核对对象归属和租户。写操作和导出审批绑定规范化后的目标、参数、用户、有效期及幂等键。')),
         (('Egress.', '网络出口。'), ('Default to deny. Route allowed traffic through a proxy that can enforce host, port, path and method where visible. Revalidate redirects and resolved IPv4/IPv6 addresses. Block metadata, private or link-local destinations except named private services. Test UDP, alternate DNS and browser side channels.', '默认拒绝。允许的流量经代理转发，在可见时检查主机、端口、路径和方法。重定向与解析后的 IPv4 / IPv6 地址逐跳复核，阻断元数据服务、私网及链路本地地址，按需单独开放指定私有服务。测试 UDP、替代 DNS 和浏览器间接外联。')),
         (('Credential broker.', '凭据代理。'), ('Mint a short-lived, audience-bound token after authorization, then inject it into the approved upstream request. Keep it out of the shell environment and transcripts. Filter echoed headers and signed links from responses, and remove credentials on cross-origin redirects.', '授权后签发短时、绑定接收方的令牌，由代理注入获准的上游请求。凭据不进入 Shell 环境和对话。过滤响应中回显的请求头与签名链接，跨源重定向时剥离凭据。')),
@@ -264,7 +263,7 @@ def build(zh):
             [('Information-flow control', '信息流控制'), ('Track provenance and taint across transformations. Separate untrusted parsing from privileged tool planning, and authorize data flows at sinks. CaMeL explores capability-backed data flows.', '跟踪来源与污点在变换中的传播。分离不可信解析和有权工具规划，在数据出口授权。CaMeL 研究用 capability 将这些约束绑定到数据流。'), ('Research guarantees apply to the studied runtime and policy model. Untracked paths, declassification and model-derived data need explicit treatment.', '研究中的保证依赖受测运行时和策略模型。需明确处理未追踪路径、解密级和模型派生数据。')],
             [('Cryptographic confidentiality', '密码学机密性'), ('Use TLS for transport, envelope encryption for persisted state, and attested key release when the workload must be protected from the host.', '传输用 TLS，持久状态用封装加密。需要抵御宿主时，使用经证明的密钥发放。'), ('A model or tool receiving plaintext can still leak it through writes or network calls. Apply destination policy to every plaintext sink.', '收到明文的模型和工具仍可能经写操作或网络泄露。对所有明文出口执行目标策略。')],
         ],
-    ) + paragraph(
+    ) + context_flow(zh) + paragraph(
         'Normalize Unicode, HTML, Markdown, URL encoding and OCR before policy evaluation, while retaining the original source and classification. Attackers can hide instructions that way too. Avoid treating base64, rephrasing, hidden system prompts or encrypted storage as authority checks.',
         '策略评估前可归一化 Unicode、HTML、Markdown、URL 编码和 OCR，并保留原始来源及分类。攻击者也会用这些形式隐藏指令。Base64、改写提示词、隐藏系统提示和存储加密各自需要独立的权限校验配合。',
     ) + refs(
@@ -396,7 +395,7 @@ def build(zh):
     design = section(5, (
         'A support agent reads customer records, consults a public help center and can draft a response. Use separate paths for public browsing and access to customer data.',
         '以客服 Agent 为例：它需要读客户记录、查看公开帮助中心并拟写回复。公开浏览与客户数据访问走独立路径。',
-    ), diagram(
+    ), deployment_architecture(zh) + diagram(
         ('Where customer data travels', '客户数据流向'),
         [
             (('Ticket service', '工单服务'), ('Resolve the user’s allowed ticket', '解析用户有权访问的工单')),
@@ -446,7 +445,7 @@ def build(zh):
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="{description}"><meta name="theme-color" content="#101719">
 <title>{title} · ShundaZhang</title>
-<link rel="stylesheet" href="style.css"><script src="../language.js"></script><script defer src="lab.js"></script>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="figures.css"><script src="../language.js"></script><script defer src="lab.js"></script>
 </head><body>
 <a class="skip" href="#main">{t('Skip to content', '跳至正文')}</a>
 <header class="top"><div class="shell top-inner">

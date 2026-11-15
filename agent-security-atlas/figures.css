@@ -1,0 +1,130 @@
+/* Local HTML diagrams stack on small screens so every step stays in view. */
+.drawing {
+  margin: 24px 0;
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.drawing figcaption {
+  font-size: 1.17rem;
+  font-weight: 700;
+}
+.drawing-nodes {
+  display: flex;
+  gap: 21px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+.drawing-nodes li {
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+  padding: 12px;
+  border: 1px solid #596b59;
+  border-radius: 6px;
+  background: var(--background);
+  overflow-wrap: anywhere;
+}
+.drawing-nodes li + li::before {
+  content: "→";
+  position: absolute;
+  left: -19px;
+  top: 12px;
+  color: var(--accent);
+}
+.drawing-nodes strong, .drawing-nodes span { display: block; }
+.drawing-nodes span, .drawing-note, .drawing-audit { color: var(--muted); font-size: .88rem; }
+.drawing-dispatch {
+  position: relative;
+  margin: 23px 0 0;
+  padding: 7px 12px;
+  border: 1px solid #708655;
+  border-radius: 6px;
+  color: var(--accent);
+  text-align: center;
+  font-size: .88rem;
+  font-weight: 650;
+}
+.drawing-dispatch::before {
+  content: "↓";
+  position: absolute;
+  top: -24px;
+  left: 75%;
+  transform: translateX(-50%);
+}
+.drawing-lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 22px 16px;
+}
+.drawing-lane {
+  position: relative;
+  padding: 13px;
+  border: 1px dashed #708655;
+  border-radius: 7px;
+}
+.drawing-lane::before {
+  content: "↓";
+  position: absolute;
+  top: -23px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent);
+}
+.drawing-lane > strong { color: var(--accent); font-size: .88rem; }
+.drawing-lane .drawing-nodes { margin: 10px 0 0; }
+.drawing-audit {
+  border-block: 1px solid var(--line);
+  padding-block: 10px;
+  margin-block: 0 14px;
+}
+.drawing-audit strong { color: var(--text); }
+.exchange {
+  padding: 0;
+  margin-block: 16px;
+  list-style: none;
+  counter-reset: exchange-step;
+}
+.exchange li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr);
+  gap: 10px 18px;
+  counter-increment: exchange-step;
+  padding: 12px 14px;
+  border-inline-start: 2px solid #708655;
+  background: var(--background);
+}
+.exchange li + li { border-top: 1px solid var(--line); }
+.exchange-actor { color: var(--accent); font-size: .85rem; font-weight: 650; }
+.exchange-actor::before {
+  content: counter(exchange-step, decimal-leading-zero);
+  color: var(--muted);
+  margin-inline-end: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.exchange li p { margin: 2px 0 0; color: var(--muted); font-size: .88rem; }
+.drawing-stop {
+  background: #3a2620;
+  color: var(--warning);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: .87rem;
+}
+.drawing-stop strong { margin-inline-end: .4em; }
+.drawing-note { margin: 0; }
+.drawing-refs { color: var(--muted); font-size: .82rem; margin: 9px 0 0; }
+.boundary .drawing-link { display: inline-block; font-size: .83rem; margin-top: 13px; }
+
+@media (max-width: 720px) {
+  .drawing-nodes { flex-direction: column; }
+  .drawing-nodes li + li::before { content: "↓"; top: -23px; left: 12px; }
+  .drawing-dispatch::before { left: 50%; }
+  .drawing-lanes { grid-template-columns: 1fr; gap: 12px; }
+  .drawing-lane:nth-child(2)::before { content: none; }
+}
+@media (max-width: 540px) {
+  .exchange li { grid-template-columns: 1fr; gap: 3px; }
+}
