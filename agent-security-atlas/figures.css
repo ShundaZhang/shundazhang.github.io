@@ -36,6 +36,12 @@
 }
 .drawing-nodes strong, .drawing-nodes span { display: block; }
 .drawing-nodes span, .drawing-note, .drawing-audit { color: var(--muted); font-size: .88rem; }
+.architecture-ingress .drawing-nodes li:nth-child(2) {
+  border-color: #9cad6a;
+  background: #26301f;
+}
+.architecture-ingress .drawing-nodes li:last-child { border-style: dashed; }
+.architecture-ingress .drawing-nodes li:last-child::before { content: "↔"; }
 .drawing-dispatch {
   position: relative;
   margin: 23px 0 0;
@@ -51,7 +57,7 @@
   content: "↓";
   position: absolute;
   top: -24px;
-  left: 75%;
+  left: 50%;
   transform: translateX(-50%);
 }
 .drawing-lanes {
@@ -117,13 +123,30 @@
 .drawing-note { margin: 0; }
 .drawing-refs { color: var(--muted); font-size: .82rem; margin: 9px 0 0; }
 .boundary .drawing-link { display: inline-block; font-size: .83rem; margin-top: 13px; }
+.architecture-sources h3 { font-size: 1.18rem; }
+.architecture-sources dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-block: 14px 24px;
+}
+.architecture-sources dl > div {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 14px;
+  background: var(--panel);
+}
+.architecture-sources dt { font-size: .94rem; font-weight: 700; }
+.architecture-sources dd { font-size: .87rem; color: var(--muted); margin: 5px 0 0; }
 
 @media (max-width: 720px) {
   .drawing-nodes { flex-direction: column; }
   .drawing-nodes li + li::before { content: "↓"; top: -23px; left: 12px; }
-  .drawing-dispatch::before { left: 50%; }
+  .architecture-ingress .drawing-nodes li:last-child::before { content: "↕"; }
+  .drawing-dispatch::before { content: none; }
   .drawing-lanes { grid-template-columns: 1fr; gap: 12px; }
   .drawing-lane:nth-child(2)::before { content: none; }
+  .architecture-sources dl { grid-template-columns: 1fr; }
 }
 @media (max-width: 540px) {
   .exchange li { grid-template-columns: 1fr; gap: 3px; }

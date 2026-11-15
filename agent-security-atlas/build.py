@@ -3,10 +3,12 @@ from html import escape
 from pathlib import Path
 
 from figures import (
+    architecture_references,
     attestation_exchange,
     context_flow,
     deployment_architecture,
     sandbox_lifecycle,
+    support_request,
     tool_exchange,
 )
 
@@ -43,10 +45,6 @@ def build(zh):
 
     def code(value):
         return f'<pre><code>{escape(value)}</code></pre>'
-
-    def diagram(label, nodes, note):
-        parts = [f'<li><strong>{t(*title)}</strong><span>{t(*description)}</span></li>' for title, description in nodes]
-        return f'<figure class="flow"><figcaption>{t(*label)}</figcaption><ol>{"".join(parts)}</ol><p>{t(*note)}</p></figure>'
 
     sections = [
         ('threats', 'Threat model', '威胁模型'),
@@ -395,17 +393,12 @@ def build(zh):
     design = section(5, (
         'A support agent reads customer records, consults a public help center and can draft a response. Use separate paths for public browsing and access to customer data.',
         '以客服 Agent 为例：它需要读客户记录、查看公开帮助中心并拟写回复。公开浏览与客户数据访问走独立路径。',
-    ), deployment_architecture(zh) + diagram(
-        ('Where customer data travels', '客户数据流向'),
-        [
-            (('Ticket service', '工单服务'), ('Resolve the user’s allowed ticket', '解析用户有权访问的工单')),
-            (('Context filter', '上下文过滤'), ('Return the minimum fields and alias', '仅返回必要字段与代号')),
-            (('Agent + sandbox', 'Agent 与沙箱'), ('Draft with scoped tools', '用限权工具拟稿')),
-            (('Send broker', '发信网关'), ('Check recipient and exact body', '校验收件人和具体正文')),
-        ],
-        ('A separate public research stage receives a search topic without ticket data. Model-generated URLs and tool arguments are validated at their actual outbound gateway.',
-         '独立的公开检索阶段只收到主题，不接触工单数据。模型生成的 URL 和工具参数在真实出口处校验。'),
-    ) + list_items([
+    ), deployment_architecture(zh) + architecture_references(zh) + support_request(zh) + paragraph(
+        'If privileged infrastructure is in scope, place the sensitive components in a confidential VM and bind key delivery to attestation. Check external model and tool endpoints separately.',
+        '若威胁模型纳入具有特权的基础设施，可将敏感组件放入机密 VM，并把密钥交付绑定到远程证明。外部模型和工具端点需要分别核对。',
+    ) + '<p><a href="#tee-attestation-diagram">' + t(
+        'See the TEE attestation and key delivery flow', '查看 TEE 证明与密钥发放流程',
+    ) + ' ↑</a></p>' + list_items([
         (('Provision.', '创建。'), ('Pin runtime images and tools. Allocate one isolated workspace to a tenant-bound job and mount only the required input. Gate cold startup and restore on the same policy. Set task TTL, quotas and recursion limits.', '固定运行镜像与工具版本。为绑定租户的任务分配隔离工作区，只挂载必要输入。新建与恢复都校验同一策略，并配置任务有效期、配额、递归上限。')),
         (('Constrain.', '约束。'), ('Keep raw credentials and customer record lookups outside the sandbox. Give the sandbox a narrow workspace and network path. Disallow public export of ticket-derived data. Require review before sending the exact message.', '原始凭据和客户记录读取留在沙箱外。沙箱只取得必要工作区与网络路径。禁止公开导出工单派生数据，发信前审批具体收件人和正文。')),
         (('Observe and revoke.', '审计与撤销。'), ('Log tenant, session, proposer, tool, normalized target, policy version and verdict. Minimize payload logging. Correlate sandbox, MCP and egress events. Expire tokens, discard temporary data, and retain approved artifacts under a tenant ACL.', '记录租户、会话、发起者、工具、规范化目标、策略版本和判断。尽量减少正文日志，关联沙箱、MCP 与网络出口事件。使令牌过期、清除临时数据，并按租户 ACL 保存获准产物。')),

@@ -39,50 +39,136 @@ def exchange(zh, ident, title, steps, description, *, stop, sources=()):
     )
 
 
+OPENAI_SANDBOX = 'https://developers.openai.com/api/docs/guides/agents/sandboxes'
+OPENAI_ARCHITECTURE = 'https://developers.openai.com/images/api/agents/harness_separate_from_compute.png'
+AWS_GATEWAY = 'https://aws.amazon.com/blogs/machine-learning/secure-ai-agents-with-policy-and-lambda-interceptors-in-amazon-bedrock-agentcore-gateway/'
+AWS_FLOW = 'https://d2908q01vomqb2.cloudfront.net/f1f836cb4ea6efb2a0b1b99f41ad8b103eff4b59/2026/05/29/ML-20712-5.png'
+DOCKER_FLOW = 'https://docs.docker.com/ai/sandboxes/architecture#follow-an-authenticated-request'
+GKE_ARCHITECTURE = 'https://docs.cloud.google.com/kubernetes-engine/docs/concepts/machine-learning/agent-workloads#actor-based-model-agent-substrate-on-gke-recommended'
+
+
 def deployment_architecture(zh):
     ingress = nodes(zh, [
-        (('Request and external data', '请求与外部数据'),
-         ('Authenticated user intent, plus web, files and tool results marked by source.',
-          '记录经过认证的用户意图，并标明网页、文件和工具结果的来源。')),
-        (('Harness ↔ model', 'Harness ↔ 模型'),
-         ('Build a minimal context. The model returns a proposed action.',
-          '构建最小上下文，由模型返回拟执行动作。')),
+        (('Application ingress', '应用接入层'),
+         ('Authenticate user and tenant. Keep user intent separate from source-tagged web and tool data.',
+          '认证用户与租户。区分用户意图和带来源标记的网页内容、工具结果。')),
+        (('Harness · application control plane', 'Harness · 应用控制面'),
+         ('Manage the session, minimize context and route proposed actions. Keep approvals and policy state here.',
+          '管理会话、最小化上下文并分发拟执行的动作。审批和策略状态保留在控制面。')),
+        (('Model endpoint', '模型端点'),
+         ('Receive policy-filtered context and return a proposed action. Treat a remote provider as a separate trust boundary.',
+          '接收按策略筛选的上下文，返回拟执行动作。远端模型服务属于独立信任边界。')),
     ])
     tool_path = nodes(zh, [
-        (('Tool authorization gateway', '工具授权网关'),
-         ('Check tenant, operation, resource and approval. Deny out-of-scope requests.',
-          '检查租户、操作、资源和审批，拦截越权请求。')),
-        (('Credential broker → tool API', '凭据代理 → 工具 API'),
-         ('Attach a short-lived scoped credential to the permitted request.',
-          '只为获准的请求附加短时限权凭据。')),
+        (('Tools / MCP gateway', '工具 / MCP 网关'),
+         ('Resolve tenant and resource server-side. Check operation, parameters and any approval receipt.',
+          '在服务端解析租户与资源，核对操作、参数和所需审批。')),
+        (('Credential broker', '凭据代理'),
+         ('Retrieve credentials from a separate vault after approval. Attach a scoped credential to this request.',
+          '授权满足后从独立凭据库取用凭据，只为本次请求附加限权凭据。')),
+        (('Private API / MCP target', '私有 API / MCP 服务'),
+         ('The upstream service enforces resource access. The gateway filters and labels returned data.',
+          '上游服务执行资源级权限检查，网关过滤并标记返回的数据。')),
     ])
     code_path = nodes(zh, [
-        (('Per-job sandbox', '任务级沙箱'),
-         ('Run generated code with limited mounts, identity and resource budgets.',
-          '限制挂载、身份和资源配额，在其中运行生成的代码。')),
-        (('Egress proxy → permitted destination', '出口代理 → 允许的目标'),
-         ('Check destination and data policy. Route privileged calls through the tool gateway.',
-          '检查目的地和数据策略。调用高权限工具时转交授权网关。')),
+        (('Task execution sandbox', '任务执行沙箱'),
+         ('Run generated code with a scoped workload identity, limited mounts and resource quotas.',
+          '用受限的工作负载身份、挂载和资源配额运行生成的代码。')),
+        (('Egress proxy outside sandbox', '沙箱外出口代理'),
+         ('Authenticate the workload. Default to deny and check destination, method and payload according to policy.',
+          '认证工作负载，默认拒绝，按策略校验目的地、请求方法和载荷。')),
+        (('Approved public endpoint', '获准的公开端点'),
+         ('Use approved read-only routes. Access to private tools is mediated by the structured gateway path.',
+          '只走获准的只读路径，访问私有工具时走结构化工具网关。')),
     ])
     dispatch, tool_label, code_label, audit_label = (
-        ('按动作类型分发', '结构化工具调用', '运行生成的代码', '审计与会话状态') if zh
-        else ('Dispatch by action type', 'Structured tool call', 'Generated code', 'Audit and session state')
+        ('Harness 按动作类型分发', '私有工具与业务操作', '隔离执行与受控外联', '审计与会话状态') if zh
+        else ('Harness dispatches by action type', 'Private tools and business actions', 'Isolated execution and controlled network access', 'Audit and session state')
     )
     audit = (
-        '网关与出口代理记录策略判断，运行日志和产物按租户隔离。工具结果返回 Harness 时继续保留来源和敏感度标记。'
+        '网关、凭据代理和出口代理关联同一任务 ID，记录策略决定。产物和快照按租户隔离，日志避免记录秘密和原始客户数据。'
         if zh else
-        'The gateway and proxy record policy decisions. Logs and artifacts stay tenant-scoped. Tool results return to the harness with provenance and sensitivity labels.'
+        'The gateway, credential broker and egress proxy log decisions under a shared job ID. Artifacts and snapshots are tenant-scoped. Logs omit secrets and raw customer data.'
     )
-    body = f'''{ingress}<p class="drawing-dispatch">{dispatch}</p><div class="drawing-lanes">
+    body = f'''<div class="architecture-ingress">{ingress}</div>
+    <p class="drawing-dispatch">{dispatch}</p><div class="drawing-lanes">
       <div class="drawing-lane"><strong>{tool_label}</strong>{tool_path}</div>
       <div class="drawing-lane"><strong>{code_label}</strong>{code_path}</div>
     </div><p class="drawing-audit"><strong>{audit_label}</strong> {audit}</p>'''
     return figure(
         zh, 'agent-system-diagram',
-        ('Reference architecture for a cloud agent', '云端 Agent 安全参考架构'), body,
-        ('The model proposes an action. The gateway and proxy enforce policy at the points where tools execute and data leaves.',
-         '模型提出动作。授权网关在工具执行前校验权限，出口代理在数据离开前校验流向。'),
-        sources=(('OWASP AI Agent Security', 'https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html'),),
+        ('Reference architecture for a cloud support agent', '云端客服 Agent 安全参考架构'), body,
+        ('This design combines published product patterns. Place authorization outside model reasoning and keep reusable credentials out of the code sandbox. The source notes below identify the official diagrams and the decisions made for this design.',
+         '此方案组合了公开产品设计。权限由模型之外的组件执行，可复用凭据保留在代码沙箱外。下方注明所参考的官方原图及本方案的取舍。'),
+    )
+
+
+def architecture_references(zh):
+    entries = [
+        (
+            'OpenAI Agents SDK',
+            ('The official figure keeps the Harness and its trusted access to tools separate from sandbox compute. Here the application runs session and approval state in the control plane, and gives code only a task workspace.',
+             '官方图把 Harness 及可信工具访问与沙箱计算分开。本方案在应用控制面管理会话和审批，代码只接触任务工作区。'),
+            [(('Official diagram', '官方原图'), OPENAI_ARCHITECTURE), (('Sandbox documentation', '沙箱文档'), OPENAI_SANDBOX)],
+        ),
+        (
+            'AWS Bedrock AgentCore Gateway',
+            ('The official flow enriches a validated request before Cedar evaluation and filters the response afterward. This design uses the same enforcement point, with credential attachment after policy and required human approval.',
+             '官方图在 Cedar 判断前补充已验证的请求上下文，返回时再过滤结果。本方案沿用网关这一权限执行点，并在策略与所需人工审批均通过后附加上游凭据。'),
+            [(('Official request flow', '官方请求流程原图'), AWS_FLOW), (('Architecture article', '架构文章'), AWS_GATEWAY)],
+        ),
+        (
+            'Docker Sandboxes',
+            ('The official local-product walkthrough shows a placeholder crossing the microVM boundary and the host proxy adding the real credential. This design applies the same separation to a cloud credential broker.',
+             '官方本地产品流程展示了占位符如何穿过 microVM 边界，再由宿主代理注入真实凭据。本方案借鉴这一划分，将凭据代理放在云端沙箱外。'),
+            [(('Official interactive request flow', '官方交互式请求流程'), DOCKER_FLOW)],
+        ),
+        (
+            'Google Cloud · Agent Substrate on GKE',
+            ('GKE documents an identity per actor, mTLS tunnels and an Envoy egress gateway. This design authenticates each task at its egress proxy before checking the destination.',
+             'GKE 文档介绍了每 Actor 独立身份、mTLS 隧道和 Envoy 出口网关。本方案同样让出口代理先认证任务身份，再判断是否放行目标。'),
+            [(('Official GKE architecture', '官方 GKE 架构文档'), GKE_ARCHITECTURE)],
+        ),
+    ]
+    cards = []
+    for name, note, sources in entries:
+        links = ' · '.join(
+            f'<a href="{escape(url, quote=True)}" target="_blank" rel="noopener noreferrer">{escape(label[zh])} ↗</a>'
+            for label, url in sources
+        )
+        cards.append(
+            f'<div><dt>{escape(name)}</dt><dd>{escape(note[zh])}'
+            f'<p class="drawing-refs">{links}</p></dd></div>'
+        )
+    heading = '图中设计来自哪里' if zh else 'Published designs behind the diagram'
+    return f'<section class="architecture-sources" aria-labelledby="architecture-sources-title"><h3 id="architecture-sources-title">{heading}</h3><dl>{"".join(cards)}</dl></section>'
+
+
+def support_request(zh):
+    return exchange(
+        zh, 'agent-request-diagram',
+        ('End-to-end request: read an order, draft, send', '端到端流程：查订单、拟稿、发信'),
+        [
+            (('Support user → application', '客服人员 → 应用'), ('Open a tenant-bound session', '创建绑定租户的会话'),
+             ('Authenticate the user. Bind the session to the operator and tenant before accepting the task.',
+              '先认证客服人员，将会话绑定到操作者和租户，再接收任务。')),
+            (('Harness → gateway → order API', 'Harness → 网关 → 订单 API'), ('Read one permitted order', '读取获准的订单'),
+             ('Resolve the order in the authenticated tenant, authorize read access, then return only the necessary fields under an alias.',
+              '在认证租户范围内解析订单，检查读权限，返回代号和所需的最少字段。')),
+            (('Separate job → egress proxy', '独立检索任务 → 出口代理'), ('Read the public help center', '查阅公开帮助中心'),
+             ('Pass a generic question into a separate job. Allow a read-only request to the reviewed help center. Tag the response as external content.',
+              '将通用问题交给独立任务，只允许向经审查的帮助中心发出只读请求。将返回内容标为外部来源。')),
+            (('Harness ↔ model', 'Harness ↔ 模型'), ('Draft for review', '生成待审批的草稿'),
+             ('The model composes a draft from the minimized context. Store it as an artifact in the authorized tenant.',
+              '模型用最小化上下文拟写回复，草稿保存在获准租户的产物存储中。')),
+            (('Human → gateway → broker → mail API', '审批人 → 网关 → 凭据代理 → 邮件 API'), ('Send only the approved message', '发送经过审批的那一封邮件'),
+             ('Bind approval to the normalized recipient and exact body. Recheck policy, attach a send-scoped credential and deduplicate the write. Record the outcome.',
+              '将审批绑定到规范化收件人与具体正文，复核策略后附加发信限权凭据，并对写操作去重。记录执行结果。')),
+        ],
+        ('This example exercises both paths in the architecture. The ticket and send calls use the tool gateway. Public browsing uses the separate execution job and egress proxy.',
+         '这个例子走通了架构里的两条路径。读订单和发信通过工具网关，公开检索走独立执行任务和出口代理。'),
+        stop=('Reject an external page’s request to send order fields to an unapproved endpoint. If the recipient or message changes after approval, request a new approval before sending.',
+              '若外部网页要求把订单字段发到未经授权的端点，出口应拦截。审批后收件人或正文有变更，发信前需重新审批。'),
     )
 
 
@@ -111,7 +197,8 @@ def tool_exchange(zh):
          '例如，客服 Agent 可以读订单并拟稿。真正发信时需要重新做权限判断，并按配置审批该次具体操作。'),
         stop=('If authorization fails or approval is missing, altered or expired, stop before calling the upstream API.',
               '权限校验失败，或审批缺失、被修改、已过期时，在调用上游 API 前停止。'),
-        sources=(('MCP Security Best Practices', 'https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices'),),
+        sources=(('AWS AgentCore · official request flow', AWS_FLOW),
+                 ('MCP Security Best Practices', 'https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices'),),
     )
 
 
