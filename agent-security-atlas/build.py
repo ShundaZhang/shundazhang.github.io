@@ -127,96 +127,6 @@ def build(zh):
         ('https://security.apple.com/blog/expanding-pcc', 'Apple PCC'),
     ) + '</div>'
 
-    isolation = section(1, (
-        'Start by deciding which code runs, who can supply it, and whose secrets and state it could reach.',
-        '先确定运行什么代码、谁能提供代码，以及代码可能接触哪些租户的秘密和运行状态。',
-    ), table(
-        [('Boundary', '隔离边界'), ('Mechanism and fit', '机制与适用场景'), ('What to configure', '必须检查的配置')],
-        [
-            [('Process / Linux container', '进程 / Linux 容器'), ('Namespaces isolate views, cgroups bound resources, and seccomp plus an LSM constrain kernel access. Suitable for controlled workloads with a shared host kernel.', 'Namespace 隔离资源视图，cgroups 限定配额，seccomp 与 LSM 收窄内核访问。适合可控且接受共享宿主内核的负载。'), ('Run without privilege, drop capabilities, restrict mounts and block access to the container runtime socket.', '非特权运行，收紧 capabilities 和挂载，禁止访问容器运行时 socket。')],
-            [('gVisor', 'gVisor'), ('Sentry implements a Linux syscall interface in userspace and mediates host operations. Gofer is used for filesystem access in applicable configurations.', 'Sentry 在用户态实现 Linux syscall 接口并代理宿主操作，适用配置下由 Gofer 协助访问文件系统。'), ('Test syscall and filesystem compatibility. Apply external egress controls and check direct filesystem access settings.', '测试 syscall 与文件系统兼容性，并检查外部网络策略和直接文件访问配置。')],
-            [('MicroVM / Kata', 'MicroVM / Kata'), ('A guest kernel separates untrusted native code and browsers from the host. Firecracker and Cloud Hypervisor use hardware virtualization. Kata integrates VM boundaries with container workflows.', '独立 Guest 内核隔离不可信原生代码和浏览器。Firecracker 与 Cloud Hypervisor 使用硬件虚拟化，Kata 将 VM 边界接入容器工作流。'), ('Review the VMM API, shared devices, filesystem bridges, host patching, and teardown. Benchmark cold starts, memory and I/O.', '检查 VMM API、共享设备、文件系统桥接、宿主补丁及销毁流程，并测量冷启动、内存和 I/O。')],
-            [('V8 isolate / WASM', 'V8 Isolate / WASM'), ('A language runtime confines supported code to a memory and API boundary. Expose typed functions or capability-scoped WASI handles for short jobs.', '语言运行时用内存和 API 边界限制所支持的代码，适合短任务，可只开放类型化函数或受限的 WASI 句柄。'), ('Constrain host imports, preopened directories, outbound fetch, execution budgets and runtime versions. Confirm which boundaries the provider adds.', '检查宿主 imports、预开放目录、网络 fetch、执行预算与运行时版本，确认厂商叠加的隔离边界。')],
-            [('Confidential VM / TEE', '机密 VM / TEE'), ('TDX and SEV-SNP protect private guest state against parts of the host threat model. Attestation can gate key delivery to a measured workload.', 'TDX 和 SEV-SNP 在其威胁模型内保护 Guest 私有状态。远程证明可用于向符合度量策略的工作负载发放密钥。'), ('Verify the full CPU/GPU trust path if required. Apply tool policy, constrain shared I/O, and model any provider receiving plaintext.', '按需验证 CPU / GPU 证明链，继续限制工具权限与共享 I/O，并明确哪些服务仍接触明文。')],
-        ],
-    ) + paragraph(
-        'Use a separate boundary for each mutually untrusted tenant or job. Bind the session ID to an authenticated owner, make base images read-only, give the job a writable scratch layer, then revoke credentials and destroy it. A warm pool should assign clean instances. For hibernation, protect snapshots like live memory and scope the restore operation to the same tenant and policy version.',
-        '按相互不信任的租户或任务划分边界。将会话 ID 绑定认证主体，用只读基础镜像和独立可写层运行任务，结束后撤销凭据并销毁实例。预热池应只分配干净实例。休眠快照应按运行内存的敏感度保护，恢复操作须检查租户和策略版本。',
-    ) + '<p><a href="#tee-products">' + t('See products using TEEs', '查看采用 TEE 的产品') + ' ↓</a></p>' + refs(
-        ('https://gvisor.dev/docs/architecture_guide/intro/', 'gVisor security'),
-        ('https://github.com/firecracker-microvm/firecracker/blob/main/docs/prod-host-setup.md', 'Firecracker Jailer'),
-        ('https://github.com/kata-containers/kata-containers', 'Kata Containers'),
-        ('https://docs.wasmtime.dev/security.html', 'Wasmtime / WASI'),
-        ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
-    ) + adoption)
-
-    permissions = section(2, (
-        'Have the harness send proposed actions to a broker that checks the current user, agent, destination, operation and data class.',
-        'Harness 把拟执行的动作交给网关，由网关检查当前用户、Agent、目标、操作和数据类别。',
-    ), diagram(
-        ('One write request', '一次写操作'),
-        [
-            (('Propose', '提出'), ('Typed tool + arguments', '类型化工具与参数')),
-            (('Authorize', '授权'), ('Tenant, resource, operation', '租户、资源和操作')),
-            (('Approve', '审批'), ('Bind approval to the exact action', '绑定到这一次具体动作')),
-            (('Execute', '执行'), ('Scoped token → destination', '限权令牌 → 目标服务')),
-            (('Record', '记录'), ('Decision and redacted results', '决策和脱敏后的结果')),
-        ],
-        ('Make the broker the only route to privileged services. Shell, browser, MCP and callbacks can otherwise create alternate paths.', '让网关成为访问高权限服务的唯一路径，同时约束 Shell、浏览器、MCP 和回调等替代路径。'),
-    ) + list_items([
-        (('Capabilities.', '最小权限。'), ('Resolve targets server-side. Authorize reads and writes separately, including object ownership and tenant. For a write or export, bind the approval to the normalized destination, parameters, user, expiry and an idempotency key.', '在服务端解析资源，对读写分别授权，并核对对象归属和租户。写操作和导出审批绑定规范化后的目标、参数、用户、有效期及幂等键。')),
-        (('Egress.', '网络出口。'), ('Default to deny. Route allowed traffic through a proxy that can enforce host, port, path and method where visible. Revalidate redirects and resolved IPv4/IPv6 addresses. Block metadata, private or link-local destinations except named private services. Test UDP, alternate DNS and browser side channels.', '默认拒绝。允许的流量经代理转发，在可见时检查主机、端口、路径和方法。重定向与解析后的 IPv4 / IPv6 地址逐跳复核，阻断元数据服务、私网及链路本地地址，按需单独开放指定私有服务。测试 UDP、替代 DNS 和浏览器间接外联。')),
-        (('Credential broker.', '凭据代理。'), ('Mint a short-lived, audience-bound token after authorization, then inject it into the approved upstream request. Keep it out of the shell environment and transcripts. Filter echoed headers and signed links from responses, and remove credentials on cross-origin redirects.', '授权后签发短时、绑定接收方的令牌，由代理注入获准的上游请求。凭据不进入 Shell 环境和对话。过滤响应中回显的请求头与签名链接，跨源重定向时剥离凭据。')),
-        (('MCP.', 'MCP。'), ('Review and pin servers and tool definitions, validate token audiences, and get separate upstream OAuth authorization. Deny token passthrough. Run local stdio servers under constrained privileges and authorize remote calls outside the model.', '审查并固定服务器和工具定义，验证 token audience，并为上游 API 单独获取 OAuth 授权。禁止透传客户端令牌。本地 stdio 服务器以受限权限运行，远端调用由模型之外的策略授权。')),
-        (('Browser sessions.', '浏览器会话。'), ('Use separate profiles for public research and authenticated work. Restrict uploads and downloads, check the destination after redirects, and put login input and state-changing actions under controlled user interaction.', '公开检索与已登录操作使用独立浏览器配置。限制上传下载，重定向后检查目标，登录输入和改变外部状态的操作由受控交互处理。')),
-    ]) + refs(
-        ('https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices', 'MCP security guidance'),
-        ('https://openai.com/index/designing-agents-to-resist-prompt-injection/', 'OpenAI prompt-injection defenses'),
-    ))
-
-    data = section(3, (
-        'The term obfuscation spans several techniques. Their security properties depend on what is transformed, who can reverse it and where policy is enforced.',
-        '混淆可以指多类机制。安全属性取决于变换的对象、谁可以还原，以及策略由哪一层执行。',
-    ), table(
-        [('Technique', '技术'), ('Use', '用途'), ('Limit', '局限')],
-        [
-            [('Delimiters / spotlighting', '分隔与 Spotlighting'), ('Tag source boundaries and mark untrusted tokens, or encode document text for a trained/instructed model to read as data. Microsoft documents a base64 variant.', '标记外部文本来源和边界，或编码文档，让配套模型按数据处理。Microsoft 记录了一种采用 Base64 的做法。'), ('Model-facing hint. Encoding is reversible, consumes context and can affect utility. Enforce permissions externally.', '它是面向模型的提示信号。编码可逆、消耗上下文并可能影响任务效果，操作权限仍需外部执行。')],
-            [('Redaction / pseudonyms', '脱敏 / 假名化'), ('Remove irrelevant fields and replace needed identifiers with tenant- or task-scoped aliases. Keep the alias map in the broker. Resolve only after authorization.', '剔除不需要的字段，对需要关联的标识符使用租户或任务级代号，将映射保存在网关，授权后再解析。'), ('Context and repeated aliases can re-identify people. A regex alone misses OCR, code and multilingual variants. Test log and tool-result handling too.', '上下文和重复代号仍可能重新识别身份。单一正则容易漏过 OCR、代码或多语言变体，还要检查日志与工具结果。')],
-            [('Secret placeholders', '秘密占位符'), ('Pass a handle or placeholder into the sandbox. An external proxy exchanges it for a credential only on the permitted request.', '把句柄或占位符交给沙箱。外部代理只为获准的请求替换成真实凭据。'), ('Scope remote operations as well as hosts. A valid token can still enable unwanted writes, and a response could echo a real secret.', '还要限制远端操作。有效令牌仍可能被用于非预期写入，响应也可能回显真实凭据。')],
-            [('Information-flow control', '信息流控制'), ('Track provenance and taint across transformations. Separate untrusted parsing from privileged tool planning, and authorize data flows at sinks. CaMeL explores capability-backed data flows.', '跟踪来源与污点在变换中的传播。分离不可信解析和有权工具规划，在数据出口授权。CaMeL 研究用 capability 将这些约束绑定到数据流。'), ('Research guarantees apply to the studied runtime and policy model. Untracked paths, declassification and model-derived data need explicit treatment.', '研究中的保证依赖受测运行时和策略模型。需明确处理未追踪路径、解密级和模型派生数据。')],
-            [('Cryptographic confidentiality', '密码学机密性'), ('Use TLS for transport, envelope encryption for persisted state, and attested key release when the workload must be protected from the host.', '传输用 TLS，持久状态用封装加密。需要抵御宿主时，使用经证明的密钥发放。'), ('A model or tool receiving plaintext can still leak it through writes or network calls. Apply destination policy to every plaintext sink.', '收到明文的模型和工具仍可能经写操作或网络泄露。对所有明文出口执行目标策略。')],
-        ],
-    ) + paragraph(
-        'Normalize Unicode, HTML, Markdown, URL encoding and OCR before policy evaluation, while retaining the original source and classification. Attackers can hide instructions that way too. Avoid treating base64, rephrasing, hidden system prompts or encrypted storage as authority checks.',
-        '策略评估前可归一化 Unicode、HTML、Markdown、URL 编码和 OCR，并保留原始来源及分类。攻击者也会用这些形式隐藏指令。Base64、改写提示词、隐藏系统提示和存储加密各自需要独立的权限校验配合。',
-    ) + refs(
-        ('https://arxiv.org/abs/2403.14720', 'Spotlighting paper'),
-        ('https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/content-filter-prompt-shields', 'Microsoft Prompt Shields'),
-        ('https://arxiv.org/abs/2503.18813', 'CaMeL paper'),
-        ('https://presidio.dataprivacystack.org/anonymizer/', 'Presidio Anonymizer'),
-        ('https://cdn.openai.com/pdf/dd8e7875-e606-42b4-80a1-f824e4e11cf4/prevent-url-data-exfil.pdf', 'URL-based exfiltration'),
-    ))
-
-    def product(name, approach, check, *links, recipe=None, recipe_note=None):
-        snippet = code(recipe) + paragraph(*recipe_note) if recipe else ''
-        return f'<article class="product"><h3>{name}</h3>{paragraph(*approach)}{snippet}{paragraph(*check)}{refs(*links)}</article>'
-
-    recent = '<div class="recent"><h3>' + t('What changed in late 2026', '2026 年下半年的进展') + '</h3>' + list_items([
-        (('12 November · AWS.', '11 月 12 日 · AWS。'),
-         ('The next-generation AgentCore Runtime announcement describes faster startup and larger workloads within the per-session Firecracker boundary. AWS also documents filesystem persistence separately.',
-          '新一代 AgentCore Runtime 公告介绍了按会话隔离的 Firecracker 如何支持更快启动与更大负载。文件系统持久化仍由独立配置控制。')),
-        (('October · Google Cloud.', '10 月 · Google Cloud。'),
-         ('Agent Compute Engine and Agent Substrate document per-agent identity and network mediation. The GKE docs compare suspend, resume and identity semantics across deployment models.',
-          'Agent Compute Engine 与 Agent Substrate 把独立身份和网络代理纳入运行时设计。GKE 文档对比了不同部署模型在休眠、恢复和身份管理上的差异。')),
-        (('September · OWASP.', '9 月 · OWASP。'),
-         ('The GenAI Security Project added the Agent Control Standard alongside existing risk guidance, reflecting growing attention to enforcement at runtime.',
-          'GenAI Security Project 在已有风险指引之外引入 Agent Control Standard，重点转向运行时如何实际执行规则。')),
-    ]) + refs(
-        ('https://aws.amazon.com/blogs/machine-learning/run-agents-securely-and-efficiently-with-the-next-generation-agentcore-runtime/', 'AWS November announcement'),
-        ('https://cloud.google.com/blog/topics/ai-infrastructure/introducing-agent-compute-engine-and-expanded-agent-governance/', 'Google Cloud announcement'),
-        ('https://genai.owasp.org/2026/09/01/owasp-genai-security-project-unveils-2026-top-10-for-llm-applications-new-agent-control-standard-and-sponsors-as-community-tops-30000-members/', 'OWASP announcement'),
-    ) + '</div>'
-
     def implementation(en, cn, *links):
         references = ' · '.join(source(url, t(*label)) for url, label in links)
         return en + '<br>' + references, cn + '<br>' + references
@@ -289,16 +199,108 @@ def build(zh):
         ],
     )
     tee_cases += paragraph(
-        'The AgentCore Firecracker, Vercel microVM and GKE gVisor examples below document execution isolation. Verify TEE coverage separately from their sandbox descriptions. For an attested deployment, check hardware endorsements, accepted measurements and TCB status, freshness, and the binding to the TLS or key-release public key. Tool authorization and egress controls still govern what measured code can send.',
-        '下方的 AgentCore Firecracker、Vercel microVM 和 GKE gVisor 是公开文档中的执行隔离做法。TEE 覆盖范围需要单独核对。验证部署时，应检查硬件背书、允许的度量和 TCB 状态、证明新鲜度，以及证据是否绑定 TLS 或密钥发放的公钥。经度量的代码仍需工具授权和出口控制。',
+        'The AgentCore Firecracker, Vercel microVM and GKE gVisor examples in Product Practices document execution isolation. Verify TEE coverage separately from their sandbox descriptions. For an attested deployment, check hardware endorsements, accepted measurements and TCB status, freshness, and the binding to the TLS or key-release public key. Tool authorization and egress controls still govern what measured code can send.',
+        '「产品做法」里的 AgentCore Firecracker、Vercel microVM 和 GKE gVisor 是公开文档中的执行隔离做法。TEE 覆盖范围需要单独核对。验证部署时，应检查硬件背书、允许的度量和 TCB 状态、证明新鲜度，以及证据是否绑定 TLS 或密钥发放的公钥。经度量的代码仍需工具授权和出口控制。',
     ) + '<p><a href="#tee-adoption">' + t(
         'See how TEE adoption compares with other controls', '查看 TEE 与其他防护措施的采用率对照',
-    ) + ' ↑</a></p></div>'
+    ) + ' ↓</a></p></div>'
+
+    isolation = section(1, (
+        'Start by deciding which code runs, who can supply it, and whose secrets and state it could reach.',
+        '先确定运行什么代码、谁能提供代码，以及代码可能接触哪些租户的秘密和运行状态。',
+    ), table(
+        [('Boundary', '隔离边界'), ('Mechanism and fit', '机制与适用场景'), ('What to configure', '必须检查的配置')],
+        [
+            [('Process / Linux container', '进程 / Linux 容器'), ('Namespaces isolate views, cgroups bound resources, and seccomp plus an LSM constrain kernel access. Suitable for controlled workloads with a shared host kernel.', 'Namespace 隔离资源视图，cgroups 限定配额，seccomp 与 LSM 收窄内核访问。适合可控且接受共享宿主内核的负载。'), ('Run without privilege, drop capabilities, restrict mounts and block access to the container runtime socket.', '非特权运行，收紧 capabilities 和挂载，禁止访问容器运行时 socket。')],
+            [('gVisor', 'gVisor'), ('Sentry implements a Linux syscall interface in userspace and mediates host operations. Gofer is used for filesystem access in applicable configurations.', 'Sentry 在用户态实现 Linux syscall 接口并代理宿主操作，适用配置下由 Gofer 协助访问文件系统。'), ('Test syscall and filesystem compatibility. Apply external egress controls and check direct filesystem access settings.', '测试 syscall 与文件系统兼容性，并检查外部网络策略和直接文件访问配置。')],
+            [('MicroVM / Kata', 'MicroVM / Kata'), ('A guest kernel separates untrusted native code and browsers from the host. Firecracker and Cloud Hypervisor use hardware virtualization. Kata integrates VM boundaries with container workflows.', '独立 Guest 内核隔离不可信原生代码和浏览器。Firecracker 与 Cloud Hypervisor 使用硬件虚拟化，Kata 将 VM 边界接入容器工作流。'), ('Review the VMM API, shared devices, filesystem bridges, host patching, and teardown. Benchmark cold starts, memory and I/O.', '检查 VMM API、共享设备、文件系统桥接、宿主补丁及销毁流程，并测量冷启动、内存和 I/O。')],
+            [('V8 isolate / WASM', 'V8 Isolate / WASM'), ('A language runtime confines supported code to a memory and API boundary. Expose typed functions or capability-scoped WASI handles for short jobs.', '语言运行时用内存和 API 边界限制所支持的代码，适合短任务，可只开放类型化函数或受限的 WASI 句柄。'), ('Constrain host imports, preopened directories, outbound fetch, execution budgets and runtime versions. Confirm which boundaries the provider adds.', '检查宿主 imports、预开放目录、网络 fetch、执行预算与运行时版本，确认厂商叠加的隔离边界。')],
+            [('Confidential VM / TEE', '机密 VM / TEE'), ('TDX and SEV-SNP protect private guest state against parts of the host threat model. Attestation can gate key delivery to a measured workload.', 'TDX 和 SEV-SNP 在其威胁模型内保护 Guest 私有状态。远程证明可用于向符合度量策略的工作负载发放密钥。'), ('Verify the full CPU/GPU trust path if required. Apply tool policy, constrain shared I/O, and model any provider receiving plaintext.', '按需验证 CPU / GPU 证明链，继续限制工具权限与共享 I/O，并明确哪些服务仍接触明文。')],
+        ],
+    ) + tee_cases + adoption + paragraph(
+        'Use a separate boundary for each mutually untrusted tenant or job. Bind the session ID to an authenticated owner, make base images read-only, give the job a writable scratch layer, then revoke credentials and destroy it. A warm pool should assign clean instances. For hibernation, protect snapshots like live memory and scope the restore operation to the same tenant and policy version.',
+        '按相互不信任的租户或任务划分边界。将会话 ID 绑定认证主体，用只读基础镜像和独立可写层运行任务，结束后撤销凭据并销毁实例。预热池应只分配干净实例。休眠快照应按运行内存的敏感度保护，恢复操作须检查租户和策略版本。',
+    ) + refs(
+        ('https://gvisor.dev/docs/architecture_guide/intro/', 'gVisor security'),
+        ('https://github.com/firecracker-microvm/firecracker/blob/main/docs/prod-host-setup.md', 'Firecracker Jailer'),
+        ('https://github.com/kata-containers/kata-containers', 'Kata Containers'),
+        ('https://docs.wasmtime.dev/security.html', 'Wasmtime / WASI'),
+        ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
+    ))
+
+    permissions = section(2, (
+        'Have the harness send proposed actions to a broker that checks the current user, agent, destination, operation and data class.',
+        'Harness 把拟执行的动作交给网关，由网关检查当前用户、Agent、目标、操作和数据类别。',
+    ), diagram(
+        ('One write request', '一次写操作'),
+        [
+            (('Propose', '提出'), ('Typed tool + arguments', '类型化工具与参数')),
+            (('Authorize', '授权'), ('Tenant, resource, operation', '租户、资源和操作')),
+            (('Approve', '审批'), ('Bind approval to the exact action', '绑定到这一次具体动作')),
+            (('Execute', '执行'), ('Scoped token → destination', '限权令牌 → 目标服务')),
+            (('Record', '记录'), ('Decision and redacted results', '决策和脱敏后的结果')),
+        ],
+        ('Make the broker the only route to privileged services. Shell, browser, MCP and callbacks can otherwise create alternate paths.', '让网关成为访问高权限服务的唯一路径，同时约束 Shell、浏览器、MCP 和回调等替代路径。'),
+    ) + list_items([
+        (('Capabilities.', '最小权限。'), ('Resolve targets server-side. Authorize reads and writes separately, including object ownership and tenant. For a write or export, bind the approval to the normalized destination, parameters, user, expiry and an idempotency key.', '在服务端解析资源，对读写分别授权，并核对对象归属和租户。写操作和导出审批绑定规范化后的目标、参数、用户、有效期及幂等键。')),
+        (('Egress.', '网络出口。'), ('Default to deny. Route allowed traffic through a proxy that can enforce host, port, path and method where visible. Revalidate redirects and resolved IPv4/IPv6 addresses. Block metadata, private or link-local destinations except named private services. Test UDP, alternate DNS and browser side channels.', '默认拒绝。允许的流量经代理转发，在可见时检查主机、端口、路径和方法。重定向与解析后的 IPv4 / IPv6 地址逐跳复核，阻断元数据服务、私网及链路本地地址，按需单独开放指定私有服务。测试 UDP、替代 DNS 和浏览器间接外联。')),
+        (('Credential broker.', '凭据代理。'), ('Mint a short-lived, audience-bound token after authorization, then inject it into the approved upstream request. Keep it out of the shell environment and transcripts. Filter echoed headers and signed links from responses, and remove credentials on cross-origin redirects.', '授权后签发短时、绑定接收方的令牌，由代理注入获准的上游请求。凭据不进入 Shell 环境和对话。过滤响应中回显的请求头与签名链接，跨源重定向时剥离凭据。')),
+        (('MCP.', 'MCP。'), ('Review and pin servers and tool definitions, validate token audiences, and get separate upstream OAuth authorization. Deny token passthrough. Run local stdio servers under constrained privileges and authorize remote calls outside the model.', '审查并固定服务器和工具定义，验证 token audience，并为上游 API 单独获取 OAuth 授权。禁止透传客户端令牌。本地 stdio 服务器以受限权限运行，远端调用由模型之外的策略授权。')),
+        (('Browser sessions.', '浏览器会话。'), ('Use separate profiles for public research and authenticated work. Restrict uploads and downloads, check the destination after redirects, and put login input and state-changing actions under controlled user interaction.', '公开检索与已登录操作使用独立浏览器配置。限制上传下载，重定向后检查目标，登录输入和改变外部状态的操作由受控交互处理。')),
+    ]) + refs(
+        ('https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices', 'MCP security guidance'),
+        ('https://openai.com/index/designing-agents-to-resist-prompt-injection/', 'OpenAI prompt-injection defenses'),
+    ))
+
+    data = section(3, (
+        'The term obfuscation spans several techniques. Their security properties depend on what is transformed, who can reverse it and where policy is enforced.',
+        '混淆可以指多类机制。安全属性取决于变换的对象、谁可以还原，以及策略由哪一层执行。',
+    ), table(
+        [('Technique', '技术'), ('Use', '用途'), ('Limit', '局限')],
+        [
+            [('Delimiters / spotlighting', '分隔与 Spotlighting'), ('Tag source boundaries and mark untrusted tokens, or encode document text for a trained/instructed model to read as data. Microsoft documents a base64 variant.', '标记外部文本来源和边界，或编码文档，让配套模型按数据处理。Microsoft 记录了一种采用 Base64 的做法。'), ('Model-facing hint. Encoding is reversible, consumes context and can affect utility. Enforce permissions externally.', '它是面向模型的提示信号。编码可逆、消耗上下文并可能影响任务效果，操作权限仍需外部执行。')],
+            [('Redaction / pseudonyms', '脱敏 / 假名化'), ('Remove irrelevant fields and replace needed identifiers with tenant- or task-scoped aliases. Keep the alias map in the broker. Resolve only after authorization.', '剔除不需要的字段，对需要关联的标识符使用租户或任务级代号，将映射保存在网关，授权后再解析。'), ('Context and repeated aliases can re-identify people. A regex alone misses OCR, code and multilingual variants. Test log and tool-result handling too.', '上下文和重复代号仍可能重新识别身份。单一正则容易漏过 OCR、代码或多语言变体，还要检查日志与工具结果。')],
+            [('Secret placeholders', '秘密占位符'), ('Pass a handle or placeholder into the sandbox. An external proxy exchanges it for a credential only on the permitted request.', '把句柄或占位符交给沙箱。外部代理只为获准的请求替换成真实凭据。'), ('Scope remote operations as well as hosts. A valid token can still enable unwanted writes, and a response could echo a real secret.', '还要限制远端操作。有效令牌仍可能被用于非预期写入，响应也可能回显真实凭据。')],
+            [('Information-flow control', '信息流控制'), ('Track provenance and taint across transformations. Separate untrusted parsing from privileged tool planning, and authorize data flows at sinks. CaMeL explores capability-backed data flows.', '跟踪来源与污点在变换中的传播。分离不可信解析和有权工具规划，在数据出口授权。CaMeL 研究用 capability 将这些约束绑定到数据流。'), ('Research guarantees apply to the studied runtime and policy model. Untracked paths, declassification and model-derived data need explicit treatment.', '研究中的保证依赖受测运行时和策略模型。需明确处理未追踪路径、解密级和模型派生数据。')],
+            [('Cryptographic confidentiality', '密码学机密性'), ('Use TLS for transport, envelope encryption for persisted state, and attested key release when the workload must be protected from the host.', '传输用 TLS，持久状态用封装加密。需要抵御宿主时，使用经证明的密钥发放。'), ('A model or tool receiving plaintext can still leak it through writes or network calls. Apply destination policy to every plaintext sink.', '收到明文的模型和工具仍可能经写操作或网络泄露。对所有明文出口执行目标策略。')],
+        ],
+    ) + paragraph(
+        'Normalize Unicode, HTML, Markdown, URL encoding and OCR before policy evaluation, while retaining the original source and classification. Attackers can hide instructions that way too. Avoid treating base64, rephrasing, hidden system prompts or encrypted storage as authority checks.',
+        '策略评估前可归一化 Unicode、HTML、Markdown、URL 编码和 OCR，并保留原始来源及分类。攻击者也会用这些形式隐藏指令。Base64、改写提示词、隐藏系统提示和存储加密各自需要独立的权限校验配合。',
+    ) + refs(
+        ('https://arxiv.org/abs/2403.14720', 'Spotlighting paper'),
+        ('https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/content-filter-prompt-shields', 'Microsoft Prompt Shields'),
+        ('https://arxiv.org/abs/2503.18813', 'CaMeL paper'),
+        ('https://presidio.dataprivacystack.org/anonymizer/', 'Presidio Anonymizer'),
+        ('https://cdn.openai.com/pdf/dd8e7875-e606-42b4-80a1-f824e4e11cf4/prevent-url-data-exfil.pdf', 'URL-based exfiltration'),
+    ))
+
+    def product(name, approach, check, *links, recipe=None, recipe_note=None):
+        snippet = code(recipe) + paragraph(*recipe_note) if recipe else ''
+        return f'<article class="product"><h3>{name}</h3>{paragraph(*approach)}{snippet}{paragraph(*check)}{refs(*links)}</article>'
+
+    recent = '<div class="recent"><h3>' + t('What changed in late 2026', '2026 年下半年的进展') + '</h3>' + list_items([
+        (('12 November · AWS.', '11 月 12 日 · AWS。'),
+         ('The next-generation AgentCore Runtime announcement describes faster startup and larger workloads within the per-session Firecracker boundary. AWS also documents filesystem persistence separately.',
+          '新一代 AgentCore Runtime 公告介绍了按会话隔离的 Firecracker 如何支持更快启动与更大负载。文件系统持久化仍由独立配置控制。')),
+        (('October · Google Cloud.', '10 月 · Google Cloud。'),
+         ('Agent Compute Engine and Agent Substrate document per-agent identity and network mediation. The GKE docs compare suspend, resume and identity semantics across deployment models.',
+          'Agent Compute Engine 与 Agent Substrate 把独立身份和网络代理纳入运行时设计。GKE 文档对比了不同部署模型在休眠、恢复和身份管理上的差异。')),
+        (('September · OWASP.', '9 月 · OWASP。'),
+         ('The GenAI Security Project added the Agent Control Standard alongside existing risk guidance, reflecting growing attention to enforcement at runtime.',
+          'GenAI Security Project 在已有风险指引之外引入 Agent Control Standard，重点转向运行时如何实际执行规则。')),
+    ]) + refs(
+        ('https://aws.amazon.com/blogs/machine-learning/run-agents-securely-and-efficiently-with-the-next-generation-agentcore-runtime/', 'AWS November announcement'),
+        ('https://cloud.google.com/blog/topics/ai-infrastructure/introducing-agent-compute-engine-and-expanded-agent-governance/', 'Google Cloud announcement'),
+        ('https://genai.owasp.org/2026/09/01/owasp-genai-security-project-unveils-2026-top-10-for-llm-applications-new-agent-control-standard-and-sponsors-as-community-tops-30000-members/', 'OWASP announcement'),
+    ) + '</div>'
 
     products = section(4, (
         'The controls below come from public product documentation reviewed on 15 November 2026. Hosted features and availability depend on compute mode, region, plan and release.',
         '以下依据截至 2026 年 11 月 15 日查阅的公开产品文档。功能可用性取决于计算模式、区域、套餐和版本。',
-    ), tee_cases + '<div class="product-grid">' + ''.join([
+    ), '<p><a href="#tee-products">' + t(
+        'See products using TEEs in Runtime Isolation', '查看「运行隔离」中的 TEE 产品案例',
+    ) + ' ↑</a></p><div class="product-grid">' + ''.join([
         product('Amazon Bedrock AgentCore', (
             'Serverless Runtime microVMs isolate CPU, memory and filesystem per session. Gateway Policy can evaluate Cedar rules for tool calls. Use IAM or JWT authentication and bind session IDs to the invoking tenant.',
             'Serverless Runtime microVM 按会话隔离 CPU、内存和文件系统。Gateway Policy 可用 Cedar 策略判断工具调用。使用 IAM 或 JWT 认证，并将会话 ID 绑定到调用租户。',
