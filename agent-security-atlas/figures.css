@@ -36,6 +36,12 @@
 }
 .drawing-nodes strong, .drawing-nodes span { display: block; }
 .drawing-nodes span, .drawing-note, .drawing-audit { color: var(--muted); font-size: .88rem; }
+.runtime-background { margin-bottom: 24px; }
+.runtime-background h3 { font-size: 1.35rem; }
+#kata-stack-diagram .drawing-nodes li:nth-child(n+3) {
+  border-color: #9cad6a;
+  background: #26301f;
+}
 .architecture-ingress .drawing-nodes li:nth-child(2) {
   border-color: #9cad6a;
   background: #26301f;

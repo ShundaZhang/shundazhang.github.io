@@ -7,6 +7,7 @@ from figures import (
     attestation_exchange,
     context_flow,
     deployment_architecture,
+    kata_stack,
     sandbox_lifecycle,
     support_request,
     tool_exchange,
@@ -212,10 +213,28 @@ def build(zh):
         'See how TEE adoption compares with other controls', '查看 TEE 与其他防护措施的采用率对照',
     ) + ' ↓</a></p></div>'
 
+    runtime_background = '<div class="runtime-background" id="microvm-kata"><h3>' + t(
+        'Background: microVM and Kata Containers', '背景知识：microVM 与 Kata Containers',
+    ) + '</h3>' + list_items([
+        (('MicroVM is a lightweight virtual machine.', 'microVM 是轻量虚拟机。'),
+         ('It boots its own guest kernel. A virtual machine monitor (VMM) configures the guest’s virtual CPUs, memory and devices. Firecracker is one implementation: it uses KVM and keeps the device model small, with virtio network, block and vsock devices. Trimming the device model helps reduce startup overhead and the amount of device code exposed to the guest.',
+          '它会启动独立的 Guest 内核。虚拟机监控器（VMM）配置 Guest 的虚拟 CPU、内存和设备。Firecracker 是一个实现，使用 KVM，并提供精简的 virtio 网络、块设备和 vsock。精简设备模型有助于降低启动开销并缩小 Guest 可触及的设备代码范围。')),
+        (('Kata Containers is a container runtime.', 'Kata Containers 是容器运行时。'),
+         ('It brings the VM boundary to Kubernetes Pods. A Pod’s <code>runtimeClassName</code> can select a configured Kata runtime handler. In a typical Kubernetes deployment, each Kata Pod gets one VM, and its containers run inside that VM. Kata supports VMM backends such as QEMU, Cloud Hypervisor and Firecracker, subject to the installed configuration and feature support.',
+          '它把 VM 隔离接入 Kubernetes Pod。Pod 的 <code>runtimeClassName</code> 可以选择已配置的 Kata 运行时。在典型 Kubernetes 部署中，一个 Kata Pod 对应一台 VM，容器在该 VM 内运行。Kata 可使用 QEMU、Cloud Hypervisor、Firecracker 等 VMM，具体组合取决于已安装的运行时和功能支持。')),
+    ]) + kata_stack(zh) + paragraph(
+        'A conventional container shares the host kernel. A Kata Pod’s containers share the guest kernel, with a VM boundary between the Pod and host. A cloud sandbox service can also launch a microVM directly for a job without Kubernetes. For a threat model that includes privileged host access to guest data, select a supported confidential VM configuration and verify its attestation separately.',
+        '普通容器共享宿主内核。Kata Pod 的容器共享 Guest 内核，Pod 与宿主之间隔着 VM 边界。云端沙箱服务也可以直接为任务启动 microVM，无需 Kubernetes。如果威胁模型包含宿主特权方读取 Guest 数据，还需选择支持机密计算的 VM 配置，并单独验证远程证明。',
+    ) + refs(
+        ('https://github.com/firecracker-microvm/firecracker/blob/main/docs/design.md', 'Firecracker Design'),
+        ('https://github.com/kata-containers/kata-containers/blob/main/docs/hypervisors.md', 'Kata VMM Backends'),
+        ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
+    ) + '</div>'
+
     isolation = section(1, (
         'Start by deciding which code runs, who can supply it, and whose secrets and state it could reach.',
         '先确定运行什么代码、谁能提供代码，以及代码可能接触哪些租户的秘密和运行状态。',
-    ), table(
+    ), runtime_background + table(
         [('Boundary', '隔离边界'), ('Mechanism and fit', '机制与适用场景'), ('What to configure', '必须检查的配置')],
         [
             [('Process / Linux container', '进程 / Linux 容器'), ('Namespaces isolate views, cgroups bound resources, and seccomp plus an LSM constrain kernel access. Suitable for controlled workloads with a shared host kernel.', 'Namespace 隔离资源视图，cgroups 限定配额，seccomp 与 LSM 收窄内核访问。适合可控且接受共享宿主内核的负载。'), ('Run without privilege, drop capabilities, restrict mounts and block access to the container runtime socket.', '非特权运行，收紧 capabilities 和挂载，禁止访问容器运行时 socket。')],

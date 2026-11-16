@@ -254,6 +254,31 @@ def attestation_exchange(zh):
     )
 
 
+def kata_stack(zh):
+    body = nodes(zh, [
+        (('Host · Kubernetes and Kata shim', '宿主 · Kubernetes 与 Kata shim'),
+         ('Kubelet requests a Pod sandbox through the CRI. With containerd, the configured Kata shim starts the VM.',
+          'kubelet 通过 CRI 请求创建 Pod 沙箱。在 containerd 部署中，由配置好的 Kata shim 启动 VM。')),
+        (('Host · VMM and KVM', '宿主 · VMM 与 KVM'),
+         ('The VMM configures vCPUs, guest memory and virtual devices. KVM provides Linux’s hardware virtualization interface.',
+          'VMM 配置 vCPU、Guest 内存与虚拟设备。KVM 提供 Linux 的硬件虚拟化接口。')),
+        (('Inside PodVM · Linux and kata-agent', 'PodVM 内 · Linux 与 kata-agent'),
+         ('The guest boots its own kernel. The host shim sends lifecycle requests to kata-agent, commonly through ttRPC over vsock.',
+          'Guest 启动自己的内核。宿主 shim 通常经 vsock 上的 ttRPC 向 kata-agent 发送生命周期请求。')),
+        (('Inside PodVM · Pod containers', 'PodVM 内 · Pod 容器'),
+         ('The Guest starts the application and sidecar containers as isolated processes sharing its kernel.',
+          'Guest 把应用容器和 sidecar 启动为相互隔离的进程，它们共享 Guest 内核。')),
+    ])
+    return figure(
+        zh, 'kata-stack-diagram', ('From a Kubernetes Pod to containers inside a VM', '从 Kubernetes Pod 到 VM 内的容器'),
+        body,
+        ('Read this as the layers involved in startup. Once the VM is running, lifecycle RPCs go from the host Kata shim to kata-agent over the host–guest channel.',
+         '图中列出启动时涉及的层次。虚拟机启动后，容器生命周期 RPC 由宿主侧 Kata shim 经宿主与 Guest 的通信通道发给 kata-agent。'),
+        sources=(('Kata Architecture', 'https://github.com/kata-containers/kata-containers/blob/main/docs/design/architecture/README.md'),
+                 ('Virtualization in Kata', 'https://github.com/kata-containers/kata-containers/blob/main/docs/design/virtualization.md')),
+    )
+
+
 def sandbox_lifecycle(zh):
     body = nodes(zh, [
         (('Allocate', '分配'),
