@@ -7,6 +7,7 @@ from figures import (
     attestation_exchange,
     context_flow,
     deployment_architecture,
+    identity_exchange,
     kata_stack,
     runtime_boundaries,
     sandbox_lifecycle,
@@ -51,6 +52,7 @@ def build(zh):
     sections = [
         ('threats', 'Threat model', '威胁模型'),
         ('isolation', 'Runtime isolation', '运行隔离'),
+        ('identity', 'Agent identity', 'Agent 身份与管理'),
         ('permissions', 'Tools & credentials', '工具与凭据'),
         ('data', 'Obfuscation & data', '混淆与数据'),
         ('products', 'Product practices', '产品做法'),
@@ -68,7 +70,7 @@ def build(zh):
       <div class="hero-copy">
         <p class="updated"><span></span>{t('TECHNICAL SURVEY · 15 NOV 2026', '技术调研 · 2026 年 11 月 15 日')}</p>
         <h1>{t('AI Agent<br>Security', 'AI Agent<br>安全与隔离')}</h1>
-        <p>{t('Control what an agent can read, run, and send. A guide to cloud sandboxes, tool authorization, and protecting sensitive context.', '控制 Agent 能读什么、运行什么、向哪里发送数据。系统整理云端沙箱、工具授权与敏感上下文保护。')}</p>
+        <p>{t('Control what an agent can read, run, and send. A guide to workload identity, cloud sandboxes, tool authorization, and protecting sensitive context.', '控制 Agent 能读什么、运行什么、向哪里发送数据。系统整理工作负载身份、云端沙箱、工具授权与敏感上下文保护。')}</p>
         <div class="actions"><a href="#isolation">{t('Explore isolation', '查看隔离技术')} ↓</a><a href="#products">{t('Compare products', '对照业界产品')} ↓</a></div>
       </div>
       <figure class="boundary">
@@ -267,7 +269,64 @@ def build(zh):
         ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
     ))
 
-    permissions = section(2, (
+    identity = section(2, (
+        'Identify who requested the work, which deployed Agent is acting, and whose permissions apply to each tool call.',
+        '识别谁发起任务、哪个已部署的 Agent 在执行，以及每次工具调用使用谁的权限。',
+    ), table(
+        [('Identity or credential', '身份或凭据'), ('Mainstream implementation', '主流实现'), ('What to verify', '校验要点')],
+        [
+            [('User identity', '用户身份'),
+             ('Enterprise SSO with OpenID Connect (OIDC) establishes the user session. An OAuth access token authorizes calls to the application API.',
+              '用 OpenID Connect（OIDC）接入企业单点登录并建立会话。调用应用 API 时使用 OAuth 访问令牌。'),
+             ('Validate the issuer and sign-in token, then resolve the user and tenant from verified claims and directory membership.',
+              '验证签发方和登录令牌，再依据经过验证的声明和目录成员关系解析用户及租户。')],
+            [('Agent workload identity', 'Agent 工作负载身份'),
+             ('Give each independently authorized workload a cloud IAM role, managed identity, or service account. The platform issues short-lived credentials, including via workload identity federation on Kubernetes.',
+              '为需要独立授权的工作负载绑定云 IAM 角色、托管身份或服务账号，由平台发放短期凭据。Kubernetes 部署可使用工作负载身份联合。'),
+             ('Map the deployed Agent to the authenticated principal on the server. Treat names and IDs supplied in prompts or tool arguments as input data.',
+              '服务端将已部署的 Agent 映射到经过认证的主体。提示词和工具参数提供的名称或 ID 按输入数据处理。')],
+            [('Tool access token', '工具访问令牌'),
+             ('Use delegated OAuth for user-scoped access. Use application credentials or a cloud role for unattended jobs with their own permissions.',
+              '代用户访问时使用 OAuth 委托。无人值守任务使用应用凭据或云角色，按该主体自身的权限执行。'),
+             ('For JWT access tokens, verify signature, issuer, audience and expiry. Check scopes or roles, then enforce tenant and object-level access at the resource.',
+              'JWT 访问令牌须检查签名、签发方、受众和有效期。校验 scope 或角色，并在资源端检查租户归属和对象级权限。')],
+        ],
+    ) + identity_exchange(zh) + paragraph(
+        'For delegated access, use an on-behalf-of exchange if the provider supports it, or a separate OAuth authorization-code flow with user consent as required by the tool. Each remote MCP server receives a token issued for that server. Calls from it to another API use a credential for that upstream resource.',
+        '代用户访问时，可用身份提供方支持的 On-Behalf-Of（OBO）令牌交换，或按工具要求通过独立的 OAuth 授权码流程取得用户授权。远程 MCP 服务接收面向自身签发的令牌，访问上游 API 时另用面向该资源的凭据。',
+    ) + refs(
+        ('https://openid.net/specs/openid-connect-core-1_0.html', 'OpenID Connect Core'),
+        ('https://www.rfc-editor.org/rfc/rfc9700', 'OAuth 2.0 Security BCP'),
+        ('https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization', 'MCP Authorization'),
+    ) + '<h3>' + t('Managing identities in production', '生产环境中的身份管理') + '</h3>' + list_items([
+        (('Inventory and ownership.', '登记与负责人。'),
+         ('Record the Agent’s owner, deployment and environment, workload principal, tool connections and permission grants. Separate production from test identities.',
+          '登记 Agent 的负责人、部署与环境、工作负载主体、工具连接和授权项。生产与测试使用独立身份。')),
+        (('Grant and revoke.', '授权与撤销。'),
+         ('Grant roles at the narrowest resource scope and review them when tools change. When retiring an Agent, disable its principal or remove its grants and delegated connections. Block new requests at the gateway while outstanding tokens expire or are revoked.',
+          '按最小资源范围授予角色，接入或变更工具时复核权限。下线时禁用主体或移除授权和委托连接，由网关阻止新请求，等待已签发令牌到期或在支持时主动吊销。')),
+        (('Trace each call.', '追踪每次调用。'),
+         ('Log the user when present, the Agent workload principal, the deployment version, the target, the decision and a request ID. Keep tokens and secrets out of logs and model context.',
+          '记录用户（如有）、Agent 工作负载主体、部署版本、目标资源、策略决定及请求 ID。令牌和秘密留在凭据管理层，避免出现在日志和模型上下文中。')),
+    ]) + '<h3>' + t('How platforms implement it', '主流平台如何实现') + '</h3>' + table(
+        [('Platform', '平台'), ('Workload identity', '工作负载身份'), ('Concrete implementation', '具体实现')],
+        [
+            [('AWS Bedrock AgentCore', 'AWS Bedrock AgentCore'),
+             ('AgentCore workload identity and IAM roles', 'AgentCore 工作负载身份与 IAM 角色'),
+             ('Runtime supports IAM SigV4 or a configured JWT authorizer. For a user’s Google Drive, a credential provider obtains the user’s OAuth grant and the Token Vault associates it with the Agent workload and user. ' + source('https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-oauth.html', 'AgentCore inbound/outbound auth'),
+              'Runtime 支持 IAM SigV4 或已配置的 JWT 授权器。代用户读 Google Drive 时，凭据提供方取得用户的 OAuth 授权，Token Vault 将其与 Agent 工作负载及用户关联。 ' + source('https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-oauth.html', 'AgentCore 入站与出站认证'))],
+            [('Microsoft Foundry / Entra ID', 'Microsoft Foundry / Entra ID'),
+             ('Entra Agent ID or a project managed identity, depending on the connection', '按连接配置使用 Entra Agent ID 或项目托管身份'),
+             ('A supported tool connection can obtain a downstream token on behalf of the user. For app-only access to Azure resources, assign the selected identity an Azure RBAC role scoped to the resource. ' + source('https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/user-delegation', 'Foundry tool delegation'),
+              '支持委托的工具连接可代用户取得下游令牌。以应用身份访问 Azure 资源时，可给选用的身份授予限定资源范围的 Azure RBAC 角色。 ' + source('https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/user-delegation', 'Foundry 工具委托'))],
+            [('Google Cloud', 'Google Cloud'),
+             ('Custom service accounts or GKE Workload Identity Federation', '自定义服务账号或 GKE 工作负载身份联合'),
+             ('Agent Runtime supports a custom service account scoped by IAM. For an Agent deployed on GKE, bind IAM access to its Kubernetes service account and obtain short-lived Google Cloud credentials without distributing a service account key. ' + source('https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/runtime/setup', 'Agent Runtime setup') + ' · ' + source('https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity', 'GKE federation'),
+              'Agent Runtime 可指定按 IAM 限权的自定义服务账号。部署在 GKE 时，可给 Agent 的 Kubernetes 服务账号绑定 IAM 权限，获取短期 Google Cloud 凭据，省去分发服务账号密钥。 ' + source('https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/runtime/setup', 'Agent Runtime 配置') + ' · ' + source('https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity', 'GKE 身份联合'))],
+        ],
+    ))
+
+    permissions = section(3, (
         'Have the harness send proposed actions to a broker that checks the current user, agent, destination, operation and data class.',
         'Harness 把拟执行的动作交给网关，由网关检查当前用户、Agent、目标、操作和数据类别。',
     ), tool_exchange(zh) + list_items([
@@ -281,7 +340,7 @@ def build(zh):
         ('https://openai.com/index/designing-agents-to-resist-prompt-injection/', 'OpenAI prompt-injection defenses'),
     ))
 
-    data = section(3, (
+    data = section(4, (
         'The term obfuscation spans several techniques. Their security properties depend on what is transformed, who can reverse it and where policy is enforced.',
         '混淆可以指多类机制。安全属性取决于变换的对象、谁可以还原，以及策略由哪一层执行。',
     ), table(
@@ -324,7 +383,7 @@ def build(zh):
         ('https://genai.owasp.org/2026/09/01/owasp-genai-security-project-unveils-2026-top-10-for-llm-applications-new-agent-control-standard-and-sponsors-as-community-tops-30000-members/', 'OWASP announcement'),
     ) + '</div>'
 
-    products = section(4, (
+    products = section(5, (
         'The controls below come from public product documentation reviewed on 15 November 2026. Hosted features and availability depend on compute mode, region, plan and release.',
         '以下依据截至 2026 年 11 月 15 日查阅的公开产品文档。功能可用性取决于计算模式、区域、套餐和版本。',
     ), '<p><a href="#tee-products">' + t(
@@ -422,7 +481,7 @@ def build(zh):
         ),
     ]) + '</div>' + recent)
 
-    design = section(5, (
+    design = section(6, (
         'A support agent reads customer records, consults a public help center and can draft a response. Use separate paths for public browsing and access to customer data.',
         '以客服 Agent 为例：它需要读客户记录、查看公开帮助中心并拟写回复。公开浏览与客户数据访问走独立路径。',
     ), deployment_architecture(zh) + architecture_references(zh) + support_request(zh) + paragraph(
@@ -454,7 +513,7 @@ def build(zh):
         for ident, label, desc, control in cases
     )
     checks = ''.join(f'<label><input type="checkbox" id="{ident}" checked> {t(en, cn)}</label>' for ident, en, cn in switches)
-    lab = section(6, (
+    lab = section(7, (
         'Choose a scenario and toggle its controls. This browser-only simulation highlights which check changes the outcome.',
         '选择情境并开关防护，观察哪一层检查会改变结果。实验只在当前浏览器中模拟决策。',
     ), f'''<div class="lab" id="policy-lab">
@@ -483,7 +542,7 @@ def build(zh):
 <main class="shell" id="main">
 {hero}
 <nav class="chapters" aria-label="{t('Chapters', '章节目录')}">{nav}</nav>
-{threats}{isolation}{permissions}{data}{products}{design}{lab}
+{threats}{isolation}{identity}{permissions}{data}{products}{design}{lab}
 </main>
 <footer class="shell"><a href="{t('../#security', '../index.zh.html#security')}">{t('Back to Security', '返回安全专题')} ↗</a><span>ShundaZhang</span></footer>
 </body></html>

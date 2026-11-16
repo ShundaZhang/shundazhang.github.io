@@ -68,6 +68,7 @@ h1 { font-size: clamp(3rem, 8.2vw, 6.8rem); letter-spacing: -.075em; margin-bloc
 .chapter header { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; margin-bottom: 27px; }
 .chapter h2 { font-size: clamp(2rem, 4.6vw, 3.45rem); letter-spacing: -.055em; }
 .chapter header p { margin: .2em 0 0; color: var(--muted); }
+#identity h3 { margin-block-start: 1.5rem; }
 .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; margin-block: 16px 22px; }
 table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: .9rem; text-align: left; }
 th, td { padding: .86rem 1rem; vertical-align: top; border-bottom: 1px solid var(--line); }

@@ -172,6 +172,32 @@ def support_request(zh):
     )
 
 
+def identity_exchange(zh):
+    return exchange(
+        zh, 'agent-identity-flow',
+        ('From user sign-in to a delegated tool call', '从用户登录到委托调用工具'),
+        [
+            (('User → application', '用户 → 应用'), ('Establish the session', '建立用户会话'),
+             ('The user signs in via the identity provider. The application resolves the account and tenant from verified identity and membership.',
+              '用户通过身份提供方登录，应用根据已验证的身份和成员关系确定账号与租户。')),
+            (('Agent → gateway', 'Agent → 网关'), ('Authenticate the caller', '认证调用方'),
+             ('The gateway identifies the Agent by its workload credential and binds the proposed read to the authenticated user session.',
+              '网关通过工作负载凭据识别 Agent，将拟执行的读操作绑定到已认证的用户会话。')),
+            (('Gateway ↔ token issuer', '网关 ↔ 令牌签发方'), ('Obtain a token for the target API', '获取目标 API 的访问令牌'),
+             ('After a policy check, the gateway obtains a short-lived delegated token for the ticket API and the required scope.',
+              '通过策略检查后，网关获取面向工单 API、权限范围符合本次操作的短期委托令牌。')),
+            (('Ticket API → audit log', '工单 API → 审计日志'), ('Authorize the ticket and trace the decision', '校验工单权限并记录决定'),
+             ('The API checks the user’s access to the specific ticket. Correlate the API and gateway records by request ID to trace both identities.',
+              'API 检查用户对具体工单的访问权限。用请求 ID 关联 API 和网关日志，追溯用户与 Agent 身份。')),
+        ],
+        ('In this example the Agent reads a ticket for a signed-in user. A scheduled job uses its own workload identity and application permissions.',
+         '此例是 Agent 代已登录的用户读取工单。定时任务则使用自己的工作负载身份和应用权限。'),
+        stop=('Deny a token issued for a different API or a request outside the user’s tenant or resource permissions.',
+              '令牌的受众与目标 API 不匹配，或请求超出用户的租户及资源权限时，拒绝调用。'),
+        sources=(('Microsoft Entra · OAuth on-behalf-of flow', 'https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-on-behalf-of-flow'),),
+    )
+
+
 def tool_exchange(zh):
     return exchange(
         zh, 'tool-authorization-diagram',
