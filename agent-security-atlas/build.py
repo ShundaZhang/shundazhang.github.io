@@ -8,6 +8,7 @@ from figures import (
     context_flow,
     deployment_architecture,
     kata_stack,
+    runtime_boundaries,
     sandbox_lifecycle,
     support_request,
     tool_exchange,
@@ -222,11 +223,23 @@ def build(zh):
         (('Kata Containers is a container runtime.', 'Kata Containers 是容器运行时。'),
          ('It brings the VM boundary to Kubernetes Pods. A Pod’s <code>runtimeClassName</code> can select a configured Kata runtime handler. In a typical Kubernetes deployment, each Kata Pod gets one VM, and its containers run inside that VM. Kata supports VMM backends such as QEMU, Cloud Hypervisor and Firecracker, subject to the installed configuration and feature support.',
           '它把 VM 隔离接入 Kubernetes Pod。Pod 的 <code>runtimeClassName</code> 可以选择已配置的 Kata 运行时。在典型 Kubernetes 部署中，一个 Kata Pod 对应一台 VM，容器在该 VM 内运行。Kata 可使用 QEMU、Cloud Hypervisor、Firecracker 等 VMM，具体组合取决于已安装的运行时和功能支持。')),
-    ]) + kata_stack(zh) + paragraph(
-        'A conventional container shares the host kernel. A Kata Pod’s containers share the guest kernel, with a VM boundary between the Pod and host. A cloud sandbox service can also launch a microVM directly for a job without Kubernetes. For a threat model that includes privileged host access to guest data, select a supported confidential VM configuration and verify its attestation separately.',
-        '普通容器共享宿主内核。Kata Pod 的容器共享 Guest 内核，Pod 与宿主之间隔着 VM 边界。云端沙箱服务也可以直接为任务启动 microVM，无需 Kubernetes。如果威胁模型包含宿主特权方读取 Guest 数据，还需选择支持机密计算的 VM 配置，并单独验证远程证明。',
+    ]) + runtime_boundaries(zh) + '<div class="runtime-comparison">' + table(
+        [('Deployment', '部署方式'), ('Kernel used by the workload', '工作负载使用的内核'), ('Typical management unit', '典型管理单位')],
+        [
+            [('Conventional container', '普通容器'), ('Shared host kernel', '共享宿主内核'),
+             ('A container, optionally inside a Pod', '容器，也可由 Pod 编排')],
+            [('Direct microVM', '直接运行 microVM'), ('Independent kernel per VM', '每台 VM 有独立内核'),
+             ('A VM, e.g. one per Agent job', 'VM，例如每个 Agent 任务分配一台')],
+            [('Kata Containers', 'Kata Containers'), ('Guest kernel shared by containers in the same Pod VM', '同一 Pod VM 内的容器共享 Guest 内核'),
+             ('Typically one VM per Kubernetes Pod', '典型部署中每个 Kubernetes Pod 对应一台 VM')],
+        ],
+    ) + '</div>' + paragraph(
+        'A <strong>microVM</strong> is a lightweight VM. <strong>Kata</strong> is the runtime that places a Pod inside a VM. A supported Kata deployment can use Firecracker to run that VM.',
+        '<strong>microVM</strong> 是轻量虚拟机。<strong>Kata</strong> 是把 Pod 放进虚拟机运行的容器运行时。在支持的部署中，Kata 可以用 Firecracker 启动这台 VM。',
+    ) + kata_stack(zh) + paragraph(
+        'For a threat model that includes privileged host access to guest data, select a supported confidential VM configuration and verify its attestation separately.',
+        '如果威胁模型包含宿主特权方读取 Guest 数据，还需选择支持机密计算的 VM 配置，并单独验证远程证明。',
     ) + refs(
-        ('https://github.com/firecracker-microvm/firecracker/blob/main/docs/design.md', 'Firecracker Design'),
         ('https://github.com/kata-containers/kata-containers/blob/main/docs/hypervisors.md', 'Kata VMM Backends'),
         ('https://shundazhang.github.io/tee-tdx-sgx/' + ('coco.zh.html' if zh else 'coco.html'), 'CoCo / TEE'),
     ) + '</div>'

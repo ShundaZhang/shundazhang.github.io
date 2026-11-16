@@ -254,6 +254,48 @@ def attestation_exchange(zh):
     )
 
 
+def runtime_boundaries(zh):
+    host_kernel = ('Host Linux kernel', '宿主 Linux 内核')[zh]
+    guest_kernel = ('Guest Linux kernel', 'Guest Linux 内核')[zh]
+    vm_boundary = ('VM boundary', 'VM 隔离边界')[zh]
+    deployments = [
+        (('Conventional Linux containers', '普通 Linux 容器'),
+         ('Container runtime (e.g. runc)', '容器运行时（如 runc）'),
+         ('Container A · Container B', '容器 A · 容器 B'), None),
+        (('Direct microVM', '直接运行 microVM'),
+         ('Sandbox service → Firecracker VMM', '沙箱服务 → Firecracker VMM'),
+         ('Agent task process', 'Agent 任务进程'), ('microVM', 'microVM')),
+        (('Kata Containers', 'Kata Containers'),
+         ('kubelet → Kata shim → VMM', 'kubelet → Kata shim → VMM'),
+         ('App container · Sidecar', '应用容器 · Sidecar'), ('Pod VM', 'Pod VM')),
+    ]
+    cards = []
+    for title, launcher, workloads, guest in deployments:
+        workload_layer = f'<p class="runtime-layer">{escape(workloads[zh])}</p>'
+        kernel = host_kernel
+        if guest:
+            workload_layer = (
+                f'<div class="runtime-guest"><strong>{guest[zh]} · {vm_boundary}</strong>'
+                f'{workload_layer}<p class="runtime-kernel">{guest_kernel}</p></div>'
+            )
+            kernel += ' + KVM'
+        cards.append(
+            f'<div class="runtime-stack"><h4>{escape(title[zh])}</h4>'
+            f'<p class="runtime-launch">{escape(launcher[zh])}</p>'
+            f'{workload_layer}<p class="runtime-kernel">{kernel}</p></div>'
+        )
+    return figure(
+        zh, 'runtime-boundaries-diagram',
+        ('Which kernel does the workload use?', '工作负载使用哪个内核？'),
+        '<div class="runtime-stacks">' + ''.join(cards) + '</div>',
+        ('The dashed boxes show the VM boundary around the workload and the guest kernel it uses. The launcher and VMM run on the host side.',
+         '虚线框标出 VM 隔离边界，工作负载及其使用的 Guest 内核在框内。启动组件和 VMM 在宿主侧运行。'),
+        sources=(('Docker containers', 'https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/'),
+                 ('Firecracker Design', 'https://github.com/firecracker-microvm/firecracker/blob/main/docs/design.md'),
+                 ('Kata Architecture', 'https://github.com/kata-containers/kata-containers/blob/main/docs/design/architecture/README.md')),
+    )
+
+
 def kata_stack(zh):
     body = nodes(zh, [
         (('Host · Kubernetes and Kata shim', '宿主 · Kubernetes 与 Kata shim'),

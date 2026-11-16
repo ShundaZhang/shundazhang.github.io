@@ -38,6 +38,42 @@
 .drawing-nodes span, .drawing-note, .drawing-audit { color: var(--muted); font-size: .88rem; }
 .runtime-background { margin-bottom: 24px; }
 .runtime-background h3 { font-size: 1.35rem; }
+.runtime-stacks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 16px;
+}
+.runtime-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--background);
+  font-size: .88rem;
+}
+.runtime-stack h4 { margin: 0; font-size: 1rem; }
+.runtime-stack p { margin: 0; }
+.runtime-stack .runtime-launch { margin-bottom: auto; color: var(--muted); }
+.runtime-guest {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed #9cad6a;
+  border-radius: 6px;
+  background: #26301f;
+}
+.runtime-guest strong { color: var(--accent); font-size: .8rem; }
+.runtime-layer, .runtime-kernel {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.runtime-kernel { background: var(--panel); }
+.runtime-guest .runtime-kernel { border-color: #708655; background: var(--background); }
+.runtime-comparison table { min-width: 0; }
 #kata-stack-diagram .drawing-nodes li:nth-child(n+3) {
   border-color: #9cad6a;
   background: #26301f;
@@ -146,6 +182,8 @@
 .architecture-sources dd { font-size: .87rem; color: var(--muted); margin: 5px 0 0; }
 
 @media (max-width: 720px) {
+  .runtime-stacks { grid-template-columns: 1fr; }
+  .runtime-comparison :is(th, td) { padding: .55rem .45rem; overflow-wrap: anywhere; }
   .drawing-nodes { flex-direction: column; }
   .drawing-nodes li + li::before { content: "↓"; top: -23px; left: 12px; }
   .architecture-ingress .drawing-nodes li:last-child::before { content: "↕"; }
