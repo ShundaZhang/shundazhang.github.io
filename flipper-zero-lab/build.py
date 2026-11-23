@@ -267,8 +267,8 @@ ufbt                         # builds the .fap in dist/
        ('Protocol implementation review — compare a decoder’s state transitions with captured edge timings, then add a regression test using synthetic input.','协议实现审查，将解码器状态迁移与边沿时序对照，再用合成输入添加回归测试。'),
        ('Hardware test automation — turn a known UART / I²C experiment into a reproducible script and save wiring and supply assumptions with it.','硬件测试自动化，把已知 UART / I²C 实验做成可重复脚本，同时保存接线与供电假设。'),
        ('Radio beyond Flipper — use an SDR for I/Q and spectrum work, a logic analyzer for digital buses, and a specialized NFC instrument when raw protocol tracing is needed.','超出 Flipper 能力时，频谱与 I/Q 用 SDR，数字总线用逻辑分析仪，底层 NFC 跟踪用专门仪器。')])+
-      note('Illustrations from Flipper Devices are attributed next to each image and retain their original ownership. Teaching diagrams and synthetic lab files are local to this site. Source review date: 23 November 2026. UI labels can differ by firmware.',
-        'Flipper Devices 图片在图旁标注出处，版权归原权利人。本站教学图与合成实验文件保存在本地。资料核验日期为 2026 年 11 月 23 日，菜单名称可能随固件变化。'))
+      note('Copyright in Flipper Devices images and other materials belongs to the respective rights holders. Source review date: November 2026. UI labels can differ by firmware.',
+        'Flipper Devices 图片等信息版权归原权利人。资料核验日期为2026年11月，菜单名称可能随固件变化。'))
 
     toc=''.join(f'<a href="#{id}"><span>{i:02}</span>{title}</a>' for i,(id,title,_) in enumerate(sections,1))
     article=''.join(f'<section id="{id}" class="chapter"><div class="chapter-label">FIELD NOTES / {i:02}</div><h2>{title}</h2>{body}</section>' for i,(id,title,body) in enumerate(sections,1))
