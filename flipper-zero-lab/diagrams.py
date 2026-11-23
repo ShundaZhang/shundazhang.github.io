@@ -11,9 +11,9 @@ def build_diagrams(root):
   def t(a,b):return b if zh else a
   def text(x,y,s,size=20,fill=INK,anchor='start',bold=False):
    return f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" text-anchor="{anchor}"'+(' font-weight="700"' if bold else '')+'>'+escape(s)+'</text>'
-  def box(x,y,w,h,label,detail='',color=BLUE):
+  def box(x,y,w,h,label,detail='',color=BLUE,single_line=False):
    r=f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="#fff" stroke="{color}" stroke-width="2"/>'
-   lines=textwrap.wrap(label,12 if zh else int(w/11))
+   lines=[label] if single_line else textwrap.wrap(label,12 if zh else int(w/11))
    for i,s in enumerate(lines):r+=text(x+w/2,y+30+i*25,s,19,color,'middle',True)
    if detail:
     lines=textwrap.wrap(detail,14 if zh else int(w/9.5))
@@ -34,11 +34,21 @@ def build_diagrams(root):
     if i<n-1:body+=arrow(x+w+5,167,x+w+35,167)
    body+=text(30,287,t(*foot),18,MUTED)
    save(name,t(*title),body,320)
-  body=box(385,180,230,105,'Flipper Zero',t('UI + files + tools','界面 + 文件 + 工具'),ORANGE)
-  for x,y,title,desc in [(25,80,'Sub-GHz',t('CC1101 / pulse timing','CC1101 / 脉冲时序')),(385,70,'NFC / LF RFID',t('13.56 MHz / 125 kHz','13.56 MHz / 125 kHz')),(745,80,'USB / BLE',t('HID + RPC','HID + RPC')),(25,315,'Infrared',t('Carrier + envelope','载波 + 包络')),(385,350,'iButton',t('Contact interface','接触式接口')),(745,315,'GPIO / ESP32',t('Buses / Wi-Fi expansion','总线 / Wi-Fi 扩展'))]:
-   body+=box(x,y,230,100,title,desc)
-  for a in [(255,170,385,205),(500,170,500,180),(745,170,615,205),(255,340,385,265),(500,350,500,285),(745,340,615,265)]:body+=arrow(*a)
-  save('map',t('Follow the physical interface','从物理接口出发'),body,490)
+  # Give the hub clear routing corridors above and below. Connector tips stop
+  # eight units outside each card so arrowheads never overlap its border.
+  body=''
+  for a in [(263,166,377,305),(500,208,500,267),(737,166,623,305),
+            (263,510,377,355),(500,457,500,393),(737,510,623,355)]:
+   body+=arrow(*a)
+  body+=box(385,275,230,110,'Flipper Zero',t('UI + files + tools','界面 + 文件 + 工具'),ORANGE,single_line=True)
+  for x,y,title,desc in [(25,90,'Sub-GHz',t('CC1101 / pulse timing','CC1101 / 脉冲时序')),
+                         (385,90,'NFC / LF RFID','13.56 MHz / 125 kHz'),
+                         (745,90,'USB / BLE','HID + RPC'),
+                         (25,465,'Infrared',t('Carrier + envelope','载波 + 包络')),
+                         (385,465,'iButton',t('Contact interface','接触式接口')),
+                         (745,465,'GPIO / ESP32',t('Buses / Wi-Fi expansion','总线 / Wi-Fi 扩展'))]:
+   body+=box(x,y,230,110,title,desc,single_line=True)
+  save('map',t('Follow the physical interface','从物理接口出发'),body,610)
   flow('firmware',('A reversible update','可逆更新路径'),[(('Back up','备份'),('SD + settings + version','SD + 配置 + 版本')),(('Install','安装'),('Trusted release / build','可信发布 / 自行构建')),(('Validate','验证'),('Known-good test','已知正常的测试')),(('Recover','恢复'),('DFU + stock release','DFU + 官方版本'))],('Also match app APIs and SD resources','同时匹配 App API 与 SD 资源'))
   flow('capture',('An RF experiment in four stages','无线实验的四个阶段'),[(('Locate','定位'),('Band + frequency','频段 + 频率')),(('Capture','捕获'),('Read / Read RAW','Read / Read RAW')),(('Compare','比较'),('Timings + fields','时序 + 字段')),(('Verify','验证'),('Bench receiver result','实验接收器结果'))],('Repeat captures; change only one variable at a time','重复采集，每次只改变一个变量'))
   body=text(35,90,t('Demodulated envelope','解调后的包络'),19)

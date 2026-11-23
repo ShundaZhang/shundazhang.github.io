@@ -36,6 +36,23 @@ for name in ('index.html','index.zh.html'):
  print(name,'12 chapters, 19 images, local links and anchors PASS')
 for f in (ROOT/'assets').glob('*.svg'):ET.parse(f)
 print('SVG XML integrity PASS')
+# Regression coverage for the overview's cramped NFC card and short connector.
+for filename in ('map.svg','map.zh.svg'):
+ tree=ET.parse(ROOT/'assets'/filename);ns={'s':'http://www.w3.org/2000/svg'}
+ texts=tree.findall('.//s:text',ns)
+ titles=[x for x in texts if x.text=='NFC / LF RFID']
+ assert len(titles)==1, 'NFC title must remain on one line'
+ details=[x for x in texts if x.text in ('13.56 MHz / 125 kHz','13.56 MHz /','125 kHz')]
+ assert details and min(float(x.attrib['y']) for x in details)-float(titles[0].attrib['y'])>=35
+ lines=[x for x in tree.findall('.//s:g/s:path',ns) if 'marker-end' in x.attrib]
+ assert len(lines)==6
+ import re,math
+ for line in lines:
+  x1,y1,x2,y2=map(float,re.findall(r'-?\d+(?:\.\d+)?',line.attrib['d']))
+  assert math.hypot(x2-x1,y2-y1)>=50, 'connector needs visible shaft and arrowhead'
+  assert all(0<v<1000 for v in (x1,x2)) and all(0<v<610 for v in (y1,y2))
+print('Overview title spacing and six full connectors PASS')
+
 with zipfile.ZipFile(ROOT/'downloads/bit-lab-source.zip') as z:
  assert z.testzip() is None
  for f in ('application.fam','bit_lab.c','README.md'):
