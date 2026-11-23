@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+downloads/bit_lab/.vscode/
+downloads/bit_lab/build/
+downloads/bit_lab/dist/
+downloads/bit_lab/.ufbt/

@@ -1,0 +1,9 @@
+App(
+    appid="bit_lab",
+    name="Bit Lab",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="bit_lab_app",
+    stack_size=2048,
+    fap_category="Games",
+    fap_version=(1, 0),
+)

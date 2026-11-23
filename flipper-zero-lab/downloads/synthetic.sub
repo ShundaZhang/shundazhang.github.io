@@ -1,0 +1,9 @@
+# SYNTHETIC TIMING EXAMPLE. Not a captured remote, not a Nice code.
+Filetype: Flipper SubGhz RAW File
+Version: 1
+Frequency: 433920000
+Preset: FuriHalSubGhzPresetOok650Async
+Protocol: RAW
+RAW_Data: 300 -900 900 -300 300 -900 900 -8000
+RAW_Data: 310 -890 890 -310 305 -895 895 -8100
+RAW_Data: 295 -905 905 -295 300 -900 900 -7900
