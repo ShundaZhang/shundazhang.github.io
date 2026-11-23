@@ -25,9 +25,11 @@ for name in ('index.html','index.zh.html'):
  assert len(page.ids)==len(set(page.ids)), 'duplicate IDs'
  assert len(page.sections)==12
  assert len(page.images)==19
+ assert any(x.startswith('assets/map') and '?v=' in x for x in page.images), 'overview cache version missing'
  for url in page.urls:
   if url.startswith(('https://','http://','mailto:')):continue
   path,_,anchor=url.partition('#')
+  path=path.split('?',1)[0]
   if path.startswith('/'):target=SITE/path.lstrip('/')
   else:target=(ROOT/path).resolve()
   if target.is_dir():target=target/'index.html'

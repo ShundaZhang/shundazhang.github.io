@@ -2,6 +2,7 @@
 from pathlib import Path
 from html import escape as e
 import json
+from hashlib import sha256
 import re
 import xml.etree.ElementTree as ET
 
@@ -60,6 +61,8 @@ def build(zh):
     def note(en,cn): return '<aside class="note">'+t(en,cn)+'</aside>'
     def diagram(name,title,caption):
         fn=f'assets/{name}{".zh" if zh else ""}.svg'
+        if name == 'map':
+            fn += '?v=' + sha256((ROOT/fn).read_bytes()).hexdigest()[:12]
         return f'<figure class="diagram"><a href="{fn}" target="_blank" rel="noopener" aria-label="{e(t("Open diagram", "打开完整示意图"))}"><img src="{fn}" alt="{e(t(*title))}" loading="lazy"/></a><figcaption><strong>{t(*title)}</strong> — {t(*caption)} <span>{t("Original teaching diagram · open full size", "本站教学示意图 · 点击查看完整大图")}</span></figcaption></figure>'
     def photo(name,title,key):
         return f'<figure class="official"><a href="assets/{name}.webp" target="_blank" rel="noopener"><img src="assets/{name}.webp" alt="{e(t(*title))}" loading="lazy"/></a><figcaption>{t(*title)} · <a href="{SOURCES[key][1]}" target="_blank" rel="noopener">Flipper Devices · {t("official illustration", "官方原图")}</a> · {t("Click for original size", "点击查看原始尺寸")}</figcaption></figure>'
@@ -276,8 +279,9 @@ ufbt                         # builds the .fap in dist/
 <div class="layout"><aside class="toc"><h2>{t('On the workbench','实验台目录')}</h2><nav aria-label="{t('Chapters','章节')}">{toc}</nav></aside><main id="main">{article}</main></div><footer><a href="{'../index.zh.html#security' if zh else '../#security'}">{t('Back to the knowledge map','返回知识体系')}</a><span>ShundaZhang · 2026</span><a href="https://github.com/ShundaZhang/shundazhang.github.io/tree/main/flipper-zero-lab">{t('Site source','站点源码')}</a></footer></body></html>'''
     def image_dimensions(match):
         src=match.group(1)
-        if src.endswith('.svg'):
-            v=ET.parse(ROOT/src).getroot().attrib['viewBox'].split()
+        file_src=src.split('?',1)[0]
+        if file_src.endswith('.svg'):
+            v=ET.parse(ROOT/file_src).getroot().attrib['viewBox'].split()
             w,height=int(v[2]),int(v[3])
         else:
             w,height={'subghz-menu':(2526,832),'dual-antenna':(1482,754),'gpio-pinout':(4359,3670),'infrared-menu':(1610,572)}[Path(src).stem]
