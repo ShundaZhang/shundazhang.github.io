@@ -27,7 +27,7 @@ def build(lang):
 </ul></section>
 <section id="talks"><h2>{labels[2][1]}</h2><ul>
 <li><a href="{TALK}">SGX Enclave Exploit Analysis and Considerations for Defensive SGX Programming</a> <span class="meta">· FOSDEM 2022</span><br><span class="detail">{t('Enclave attack analysis and defensive programming; the conference page includes slides and recordings.','Enclave 攻击分析与防御编程；会议页面包含演示文稿及录像。')}</span></li>
-<li>{t('Instructor for advanced exploitation (SANS SEC660 / GXPN preparation), advanced secure coding and applied cryptography; contributed to security training and CTF activities at Intel.','担任高级漏洞利用（SANS SEC660 / GXPN 备考）、高级安全编码及应用密码学课程讲师，参与 Intel 安全培训与 CTF 活动建设。')}</li>
+<li>{t('Instructor for advanced exploitation (SANS SEC660 / GXPN), advanced secure coding and applied cryptography; contributed to security training and CTF activities at Intel.','担任高级漏洞利用（SANS SEC660 / GXPN）、高级安全编码及应用密码学课程讲师，参与 Intel 安全培训与 CTF 活动建设。')}</li>
 <li>{t('Contributed to the Anolis confidential computing SIG and TEE-related security and patent review.','参与龙蜥（Anolis）机密计算 SIG，以及 TEE 相关安全与专利审查。')}</li>
 </ul></section>
 <section id="background"><h2>{labels[3][1]}</h2>
@@ -42,7 +42,7 @@ def build(lang):
 </ul></section>'''
     html=f'''<!doctype html>
 <html lang="{'zh-CN' if lang=='zh' else 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><meta name="description" content="{t('Technical résumé of ShundaZhang: systems and hardware security, SGX/TDX, confidential computing, cryptography and security validation.','ShundaZhang 技术履历：系统与硬件安全、SGX/TDX、机密计算、密码学及安全验证。')}"><title>{t('Résumé','技术履历')} · ShundaZhang</title><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><script src="../language.js"></script></head>
-<body><a class="skip" href="#main">{t('Skip to content','跳至正文')}</a><div class="topbar"><div class="wrap"><a class="back" href="{home}">← {t('Personal home','个人主页')}</a><nav aria-label="{t('Language selection','语言选择')}" class="languages"><a href="index.html" data-atlas-lang="en" {'aria-current="page"' if lang=='en' else ''}>EN</a><a href="index.zh.html" data-atlas-lang="zh" {'aria-current="page"' if lang=='zh' else ''}>中文</a></nav></div></div><main class="wrap" id="main">{body}</main><footer class="wrap"><span>© 2026 ShundaZhang</span><span>{t('Updated 1 Oct 2026','更新于 2026 年 10 月 1 日')}</span></footer></body></html>'''
+<body><a class="skip" href="#main">{t('Skip to content','跳至正文')}</a><div class="topbar"><div class="wrap"><a class="back" href="{home}">← {t('Personal home','个人主页')}</a><nav aria-label="{t('Language selection','语言选择')}" class="languages"><a href="index.html" data-atlas-lang="en" {'aria-current="page"' if lang=='en' else ''}>EN</a><a href="index.zh.html" data-atlas-lang="zh" {'aria-current="page"' if lang=='zh' else ''}>中文</a></nav></div></div><main class="wrap" id="main">{body}</main><footer class="wrap"><span>© 2026 ShundaZhang</span><span>{t('Updated 27 Nov 2026','更新于 2026 年 11 月 27 日')}</span></footer></body></html>'''
     html=re.sub(r'&(?!#\d+;|#x[0-9a-fA-F]+;|[A-Za-z]+;)', '&amp;', html)
     (ROOT/('index.zh.html' if lang=='zh' else 'index.html')).write_text(html,encoding='utf-8')
 if __name__=='__main__':
