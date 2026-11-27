@@ -3,3 +3,8 @@
 @media(max-width:600px){.wrap{width:calc(100% - 36px)}body{font-size:15px;line-height:1.7}.profile{padding-top:28px}h1{font-size:31px}.specialty{font-size:14px}h3 span{display:block;margin-left:0;margin-top:2px}.contents{gap:9px 18px;margin-top:24px}h2{font-size:22px}.profile-links{gap:9px 16px;font-size:13px}.education li{font-size:14px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 @media print{.topbar,.contents,.skip{display:none}.wrap{width:100%;max-width:none}.profile{padding:0}body{font-size:10pt;line-height:1.5}h1{font-size:24pt}h2{font-size:15pt}h3{font-size:11pt}h3 span,.specialty,.confidential,.detail,.meta,.section-note,.education li{font-size:9pt}section{margin-bottom:17px}li{margin:5px 0}h2,h3{break-after:avoid}li,.experience{break-inside:avoid}footer{font-size:8pt}a{color:inherit}}
+
+/* User-supplied illustration, confined to the resume heading. */
+.profile-heading{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:28px;align-items:start;margin-bottom:17px}.profile-title{min-width:0}.profile-title .specialty{margin-bottom:0}.profile-avatar{display:block;width:128px;height:128px;object-fit:contain;aspect-ratio:1;border-radius:16px;border:1px solid var(--line);background:#07152d}
+@media(max-width:600px){.profile-heading{display:flex;flex-direction:column-reverse;gap:19px;margin-bottom:18px}.profile-avatar{width:88px;height:88px;border-radius:12px}.profile-title{width:100%}}
+@media print{.profile-heading{display:grid;grid-template-columns:minmax(0,1fr) 76px;gap:18px;margin-bottom:10px}.profile-avatar{width:76px;height:76px;border-radius:8px}.profile-heading,.profile-avatar{break-inside:avoid}}

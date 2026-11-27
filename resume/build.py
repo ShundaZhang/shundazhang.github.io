@@ -1,14 +1,16 @@
 """Build the public, bilingual technical résumé from curated publishable text."""
 from pathlib import Path
 import re
+from hashlib import sha256
 ROOT=Path(__file__).resolve().parent
+CSS_VERSION=sha256((ROOT/'style.css').read_bytes()).hexdigest()[:12]
 TALK='https://archive.fosdem.org/2022/schedule/event/tee_sgx_analysis/'
 def build(lang):
     t=lambda en,zh:zh if lang=='zh' else en
     home='/index.zh.html' if lang=='zh' else '/'
     ctf='/ctf/index.zh.html' if lang=='zh' else '/ctf/'
     labels=[('experience',t('Experience','工作经历')),('projects',t('Selected projects','项目经历')),('talks',t('Talks & teaching','演讲与教学')),('background',t('Technical background','技术背景'))]
-    body=f'''<header class="profile"><p class="kicker">{t('TECHNICAL RÉSUMÉ','技术履历')}</p><h1>ShundaZhang</h1><p class="specialty">{t('Systems & hardware security · Confidential computing · Cryptography','系统与硬件安全 · 机密计算 · 密码学')}</p>
+    body=f'''<header class="profile"><div class="profile-heading"><div class="profile-title"><p class="kicker">{t('TECHNICAL RÉSUMÉ','技术履历')}</p><h1>ShundaZhang</h1><p class="specialty">{t('Systems & hardware security · Confidential computing · Cryptography','系统与硬件安全 · 机密计算 · 密码学')}</p></div><img class="profile-avatar" src="avatar.png" width="128" height="128" alt="{t('Illustrated avatar of ShundaZhang','ShundaZhang 的插画头像')}" decoding="async"></div>
 <p>{t('I work on hardware and systems security at ByteDance, with a focus on cryptography, chip security, trusted execution and platform trust. Previously at Intel, I worked as a technical lead, security researcher and cloud security engineer on SGX, TDX and their software stacks. My experience combines security architecture review, hands-on validation and low-level software engineering.','我目前在字节跳动从事硬件与系统安全工作，关注密码学、芯片安全、可信执行及平台信任。此前在 Intel 担任技术负责人、安全研究员和云安全工程师，长期参与 SGX、TDX 及其软件栈的工作，结合安全架构审查、实战验证与底层软件工程。')}</p>
 <nav class="profile-links" aria-label="{t('Profile links','个人页面')}"><a href="https://github.com/ShundaZhang">GitHub</a><a href="{ctf}">{t('CTF record','CTF 记录')}</a><a href="{home}#knowledge">{t('Knowledge Map','知识体系')}</a></nav></header>
 <nav class="contents" aria-label="{t('On this page','本页目录')}">{''.join(f'<a href="#{ident}">{label}</a>' for ident,label in labels)}</nav>
@@ -41,7 +43,7 @@ def build(lang):
 <li>{t('Bachelor’s in Materials Science and Engineering','材料科学与工程学士')} · {t('Wuhan University of Technology','武汉理工大学')} <span class="meta">· 2003</span></li>
 </ul></section>'''
     html=f'''<!doctype html>
-<html lang="{'zh-CN' if lang=='zh' else 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><meta name="description" content="{t('Technical résumé of ShundaZhang: systems and hardware security, SGX/TDX, confidential computing, cryptography and security validation.','ShundaZhang 技术履历：系统与硬件安全、SGX/TDX、机密计算、密码学及安全验证。')}"><title>{t('Résumé','技术履历')} · ShundaZhang</title><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"><script src="../language.js"></script></head>
+<html lang="{'zh-CN' if lang=='zh' else 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffffff"><meta name="description" content="{t('Technical résumé of ShundaZhang: systems and hardware security, SGX/TDX, confidential computing, cryptography and security validation.','ShundaZhang 技术履历：系统与硬件安全、SGX/TDX、机密计算、密码学及安全验证。')}"><title>{t('Résumé','技术履历')} · ShundaZhang</title><link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v={CSS_VERSION}"><script src="../language.js"></script></head>
 <body><a class="skip" href="#main">{t('Skip to content','跳至正文')}</a><div class="topbar"><div class="wrap"><a class="back" href="{home}">← {t('Personal home','个人主页')}</a><nav aria-label="{t('Language selection','语言选择')}" class="languages"><a href="index.html" data-atlas-lang="en" {'aria-current="page"' if lang=='en' else ''}>EN</a><a href="index.zh.html" data-atlas-lang="zh" {'aria-current="page"' if lang=='zh' else ''}>中文</a></nav></div></div><main class="wrap" id="main">{body}</main><footer class="wrap"><span>© 2026 ShundaZhang</span><span>{t('Updated 27 Nov 2026','更新于 2026 年 11 月 27 日')}</span></footer></body></html>'''
     html=re.sub(r'&(?!#\d+;|#x[0-9a-fA-F]+;|[A-Za-z]+;)', '&amp;', html)
     (ROOT/('index.zh.html' if lang=='zh' else 'index.html')).write_text(html,encoding='utf-8')
