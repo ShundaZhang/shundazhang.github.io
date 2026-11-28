@@ -31,3 +31,17 @@ Synthetic script tests and source / SDK compilation are software checks. No Flip
 ## Recovery
 
 The change is isolated to this directory and one entry in each bilingual homepage. Revert the commit adding this directory to undo the publication. Rebuild deterministically with `python3 build.py` after editing the guide.
+
+### Worked examples added in November 2026
+
+Both languages include `#nice-unleashed`, `#nice-capture-emulate`,
+`#m1-emulate`, and `#m1-copy`. `case_studies.py` renders these examples;
+`case_study_diagrams.py` generates their original bilingual SVG workflows.
+The site-owner-reported Nice hardware validation is explicitly distinguished
+from this update's documentation, source and page checks. No real RF capture,
+card dump, keys or identifying device state is included.
+
+Unleashed installation, counter documentation and Nice encoder/menu were
+reviewed at upstream commit `4c55ea75d09b37e646d24486addeadb7e076319f`.
+Official Flipper NFC documentation supplies the read/emulate/shadow-file and
+NFC Magic writing paths. This review did not flash or connect a device.

@@ -24,7 +24,10 @@ for name in ('index.html','index.zh.html'):
  page=Page();page.feed((ROOT/name).read_text())
  assert len(page.ids)==len(set(page.ids)), 'duplicate IDs'
  assert len(page.sections)==12
- assert len(page.images)==19
+ for anchor in ('nice-unleashed','nice-capture-emulate','m1-emulate','m1-copy'):assert anchor in page.ids
+ assert len([x for x in page.images if 'worked' in x])==2
+ assert '4c55ea75d09b37e646d24486addeadb7e076319f' in (ROOT/name).read_text()
+ assert len(page.images)==21
  assert any(x.startswith('assets/map') and '?v=' in x for x in page.images), 'overview cache version missing'
  for url in page.urls:
   if url.startswith(('https://','http://','mailto:')):continue
@@ -35,7 +38,7 @@ for name in ('index.html','index.zh.html'):
   if target.is_dir():target=target/'index.html'
   assert target.exists(), (name,url)
   if anchor and not path:assert anchor in page.ids,(name,anchor)
- print(name,'12 chapters, 19 images, local links and anchors PASS')
+ print(name,'12 chapters, 21 images, local links and anchors PASS')
 for f in (ROOT/'assets').glob('*.svg'):ET.parse(f)
 print('SVG XML integrity PASS')
 # Regression coverage for the overview's cramped NFC card and short connector.

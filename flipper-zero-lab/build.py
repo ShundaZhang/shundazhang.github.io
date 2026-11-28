@@ -61,12 +61,14 @@ def build(zh):
     def note(en,cn): return '<aside class="note">'+t(en,cn)+'</aside>'
     def diagram(name,title,caption):
         fn=f'assets/{name}{".zh" if zh else ""}.svg'
-        if name == 'map':
+        if name in ('map', 'nice-worked', 'm1-worked'):
             fn += '?v=' + sha256((ROOT/fn).read_bytes()).hexdigest()[:12]
         return f'<figure class="diagram"><a href="{fn}" target="_blank" rel="noopener" aria-label="{e(t("Open diagram", "打开完整示意图"))}"><img src="{fn}" alt="{e(t(*title))}" loading="lazy"/></a><figcaption><strong>{t(*title)}</strong> — {t(*caption)} <span>{t("Original teaching diagram · open full size", "本站教学示意图 · 点击查看完整大图")}</span></figcaption></figure>'
     def photo(name,title,key):
         return f'<figure class="official"><a href="assets/{name}.webp" target="_blank" rel="noopener"><img src="assets/{name}.webp" alt="{e(t(*title))}" loading="lazy"/></a><figcaption>{t(*title)} · <a href="{SOURCES[key][1]}" target="_blank" rel="noopener">Flipper Devices · {t("official illustration", "官方原图")}</a> · {t("Click for original size", "点击查看原始尺寸")}</figcaption></figure>'
 
+    from case_studies import render
+    nice_worked, m1_worked = render(zh, diagram)
     sections=[]
     def section(id,title,body): sections.append((id,t(*title),body))
     section('map',('The hardware-hacking map','硬件 Hacking 全景'),
@@ -142,7 +144,7 @@ git rev-parse HEAD                 # record the exact source revision
       p('A rolling-code design maintains transmitter and receiver state. A previously accepted message may be rejected as stale; consuming codes away from the receiver can also affect synchronization. Official firmware decodes listed dynamic protocols with saving disabled. Use the receiver manufacturer’s authorized enrollment procedure for a new transmitter. Flipper’s Add Manually path is useful only where the current firmware explicitly supports that protocol and the receiver supports enrollment.',
         '滚动码设计维护发射端与接收端状态。已经接受过的消息可能因过期而被拒绝，在接收器范围外消耗码值也可能影响同步。官方固件对表中动态协议允许解码，但禁用保存。新发射器按接收器厂商的授权注册流程处理；Flipper 的 Add Manually 仅适用于当前固件明确支持且接收器支持注册的协议。')+
       note('Do not diagnose a failed rolling-code experiment by repeatedly pressing a live vehicle or gate remote. Record the state and consult the receiver’s pairing / resynchronization instructions. Keep RAW replay practice on the fixed-code bench.',
-        '滚动码实验失败时，不要反复按真实车辆或门机遥控器“试运气”。先记录状态，再查接收端的注册 / 重同步说明。RAW 重放练习放在固定码实验台上完成。')+refs('nice','add'))
+        '滚动码实验失败时，不要反复按真实车辆或门机遥控器“试运气”。先记录状态，再查接收端的注册 / 重同步说明。RAW 重放练习放在固定码实验台上完成。')+refs('nice','add')+nice_worked)
 
     section('nfc',('M1 / MIFARE Classic cards','M1 / MIFARE Classic 卡片'),
       p('“M1” commonly refers to MIFARE Classic. Identify the card family before choosing a workflow. Classic, DESFire, Ultralight and LF RFID have different memory and authentication models. Displaying a UID is only one observation; determine what the reader actually authenticates.',
@@ -152,11 +154,7 @@ git rev-parse HEAD                 # record the exact source revision
       p('Each sector trailer contains a 6-byte Key A, access-control bytes and a 6-byte Key B field. The access bytes determine block permissions and how Key B is used. Trailer data needs careful handling: readable dump bytes do not necessarily expose the actual secret keys. Classic uses Crypto1; a UID-only reader introduces a separate system-design weakness.',
         '每个扇区尾块包含 6 字节 Key A、访问控制字节及 6 字节 Key B 字段。访问位决定各块权限及 Key B 用法。尾块要谨慎处理，dump 中可读出的字节不一定就是实际秘密密钥。Classic 使用 Crypto1；仅读 UID 的读卡器还存在独立的系统设计弱点。')+
       diagram('cardflow',('Read, emulate, write and verify','读取、模拟、写卡与验证'),('Check dump completeness and card behavior separately. Treat keys and dumps as credentials.','分别验证 dump 完整性与卡片行为，将密钥和 dump 当作凭据管理。'))+
-      h('Clone a known-key test card','复制已知密钥的测试卡')+
-      steps([('Prepare a spare Classic card with known test keys and a lab reader. In NFC / Read, scan and save it. Record UID, type and sectors successfully read.','准备一张密钥已知的备用 Classic 测试卡与实验读头，使用 NFC / Read 扫描并保存，记录 UID、类型与读取成功的扇区。'),
-       ('Resolve missing sectors before writing. Test emulation against the lab reader and note whether it authenticates data or only checks the UID.','写卡前处理未读取的扇区。先在实验读头测试模拟，记录它验证数据认证还是仅检查 UID。'),
-       ('Open Apps / NFC / NFC Magic and use Check Magic Tag on a compatible blank. Supported generations and capacities must match the current app’s documentation.','进入 Apps / NFC / NFC Magic，使用 Check Magic Tag 检查兼容空白卡，代际与容量以当前 App 文档为准。'),
-       ('Choose Write and the saved complete test image. Keep the blank in place, then reread it and compare UID and application data. Test the original, Flipper emulation and blank separately on the lab reader.','选择 Write 和完整测试镜像，写入时保持空白卡位置。重新读取并对比 UID 和应用数据，分别测试原卡、Flipper 模拟及空白卡。')])+
+      m1_worked+
       table([('Result','结果'),('What it means','含义'),('Next check','下一步')],[
        [('UID read','读取 UID'),('Selection and identification worked','选卡与标识读取成功'),('Sector authentication and data coverage','扇区认证与数据覆盖率')],
        [('Complete Classic dump','完整 Classic dump'),('Required data and usable keys have been collected','所需数据与可用密钥已取得'),('Access bits, dynamic state and reader policy','访问位、动态状态及读头策略')],
@@ -293,6 +291,8 @@ ufbt                         # builds the .fap in dist/
 if __name__ == '__main__':
     from diagrams import build_diagrams
     build_diagrams(ROOT/'assets')
+    from case_study_diagrams import build_case_diagrams
+    build_case_diagrams(ROOT/'assets')
     build(False)
     build(True)
     print('Built Flipper Zero Hacking Lab · EN / 中文 · 12 chapters')
